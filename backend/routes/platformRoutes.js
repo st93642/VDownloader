@@ -5,5 +5,6 @@ const router = Router();
 
 router.get("/", platformController.listPlatforms);
 router.get("/supported", platformController.listSupportedPlatforms);
+router.get("/capabilities", platformController.getPlatformCapabilities);
 
 module.exports = router;

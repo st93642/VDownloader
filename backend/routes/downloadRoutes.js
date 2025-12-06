@@ -9,5 +9,6 @@ router.post("/download", downloadLimiter, downloadController.initiateDownload);
 router.get("/status/:downloadId", statusLimiter, downloadController.getDownloadStatus);
 router.delete("/cancel/:downloadId", downloadLimiter, downloadController.cancelDownload);
 router.get("/formats/:platform", statusLimiter, downloadController.getFormats);
+router.post("/metadata", validateLimiter, downloadController.getMetadata);
 
 module.exports = router;
