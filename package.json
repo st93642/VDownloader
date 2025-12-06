@@ -1,7 +1,7 @@
 {
   "name": "vdownloader",
   "version": "0.1.0",
-  "description": "Video downloader web application backend and scaffolding",
+  "description": "Video downloader web application with Node.js/Express backend and modern responsive frontend",
   "main": "backend/server.js",
   "type": "commonjs",
   "scripts": {
