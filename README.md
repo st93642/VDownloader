@@ -23,15 +23,64 @@ The previous Node.js/Express web application has been removed to make way for a 
 - 📝 **Download History**: Track and manage previous downloads
 - ⚡ **Fast & Efficient**: Async/await for non-blocking downloads
 
+## Technology Stack
+
+- **Language**: Rust 🦀
+- **GUI Framework**: GTK4
+- **Video Extraction**: yt-dlp (via youtube_dl Rust crate)
+- **Async Runtime**: Tokio
+
+### Video Extraction Library
+
+After thorough research, we've selected the **`youtube_dl` Rust crate** (wrapper around yt-dlp CLI) as our video extraction solution.
+
+**Why this choice?**
+- ✅ Supports all target platforms (YouTube, TikTok, Twitter, Instagram, Reddit) plus 1000+ sites
+- ✅ Leverages industry-standard yt-dlp (137K+ GitHub stars, actively maintained)
+- ✅ MIT/Apache-2.0 license compatible
+- ✅ Platform API changes handled automatically by yt-dlp maintainers
+- ✅ Clean Rust API with async support
+
+📖 **See [RESEARCH_VIDEO_EXTRACTION.md](./RESEARCH_VIDEO_EXTRACTION.md)** for detailed analysis and comparison of alternatives.
+
 ## Development
 
-This project is in early development. Check back soon for updates!
+This project is in early development. The architecture and technology stack have been researched and documented.
 
 ### Prerequisites
 
+**Development Tools:**
 - Rust (latest stable version)
 - GTK4 development libraries
 - Cargo
+- pkg-config
+
+**Runtime Dependencies:**
+- yt-dlp (Python CLI tool)
+
+**Linux (Ubuntu/Debian):**
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install GTK4 development libraries
+sudo apt install libgtk-4-dev build-essential pkg-config
+
+# Install yt-dlp
+sudo apt install yt-dlp
+# OR: pip3 install yt-dlp
+```
+
+**macOS:**
+```bash
+# Install dependencies via Homebrew
+brew install rust gtk4 yt-dlp
+```
+
+**Windows:**
+- Install Rust from https://rustup.rs/
+- Install GTK4 via MSYS2
+- Install yt-dlp: `pip install yt-dlp`
 
 ### Building
 
@@ -40,12 +89,18 @@ This project is in early development. Check back soon for updates!
 git clone https://github.com/st93642/VDownloader.git
 cd VDownloader
 
-# Build the project
+# Build the project (when implemented)
 cargo build --release
 
-# Run the application
+# Run the application (when implemented)
 cargo run
 ```
+
+### Documentation
+
+- 📋 [Research Document](./RESEARCH_VIDEO_EXTRACTION.md) - Detailed library selection analysis
+- 🏗️ [Architecture](./docs/ARCHITECTURE.md) - System design and structure
+- 🚀 [Quick Start Guide](./docs/QUICK_START.md) - Development setup and examples
 
 ## License
 
