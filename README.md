@@ -1,6 +1,6 @@
 # VDownloader
 
-VDownloader is a Node.js/Express based service that will power a cross-platform video downloading web application. This initial scaffolding sets up the core architecture, dependencies, and configuration so future feature work can focus on building user-facing functionality.
+VDownloader is a cross-platform video downloading web application with a Node.js/Express backend and a modern, responsive frontend. This project provides a complete solution for downloading videos from multiple platforms including YouTube, TikTok, X (Twitter), and Instagram.
 
 ## Project Structure
 
@@ -23,7 +23,10 @@ VDownloader is a Node.js/Express based service that will power a cross-platform 
 │   ├── index.js
 │   └── platforms.js
 ├── frontend
-│   └── README.md
+│   ├── index.html      # Main frontend application
+│   ├── styles.css      # Complete CSS styling
+│   ├── script.js       # JavaScript application logic
+│   └── README.md       # Frontend documentation
 ├── LICENSE
 ├── README.md
 ├── package.json
@@ -56,6 +59,27 @@ VDownloader is a Node.js/Express based service that will power a cross-platform 
 
 The API will default to `http://localhost:4000` unless the `PORT` environment variable is set.
 
+## Frontend Development
+
+The frontend is a complete, responsive web application that works with the backend API. To run the frontend:
+
+1. **Start the backend server** (required for API endpoints):
+   ```bash
+   npm run dev
+   ```
+
+2. **Access the frontend**: Open `http://localhost:4000` in your browser
+
+The frontend includes:
+- Modern, responsive UI with gradient design
+- Multi-platform support (YouTube, TikTok, X, Instagram)
+- Real-time download progress tracking
+- Download history management
+- Format and quality selection
+- Mobile-optimized interface
+
+For detailed frontend documentation, see `frontend/README.md`.
+
 ## Configuration
 
 Environment variables are loaded with [dotenv](https://github.com/motdotla/dotenv). Duplicate `.env.example` to `.env` and adjust as needed. You may supply any of the following:
@@ -78,6 +102,25 @@ Supported platforms and their metadata are centralized in `config/platforms.js`.
 | `GET` | `/api/platforms` | Lists all configured platforms |
 | `GET` | `/api/platforms/supported` | Lists only currently enabled platforms |
 
-## Frontend Placeholder
+## Frontend Features
 
-The `frontend` directory is reserved for a future client application. Until then it contains documentation only so frontend development can begin independently of the backend skeleton.
+The complete frontend application provides:
+
+### 🎯 Core Functionality
+- **Multi-platform Support**: Download from YouTube, TikTok, X, Instagram, and more
+- **Format Selection**: Choose between video and audio-only downloads
+- **Quality Options**: Select from various quality presets (144p to 1080p)
+- **Smart URL Validation**: Automatic platform detection and URL validation
+- **Real-time Progress**: Live download progress with speed and time estimates
+
+### 🎨 User Interface
+- **Modern Design**: Clean, professional interface with gradient backgrounds
+- **Responsive Layout**: Fully responsive design for mobile, tablet, and desktop
+- **Interactive Elements**: Smooth animations and hover effects
+- **Status Indicators**: Clear visual feedback for all actions
+
+### 📊 Download Management
+- **Download History**: Persistent history of recent downloads (stored locally)
+- **Progress Tracking**: Real-time progress bars with percentage completion
+- **Speed Monitoring**: Display current download speed and estimated time remaining
+- **Download Again**: Quick re-download option from history
