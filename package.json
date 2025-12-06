@@ -29,6 +29,8 @@
     "express-rate-limit": "^8.2.1",
     "fluent-ffmpeg": "^2.1.2",
     "node-fetch": "^3.3.2",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "ytdl-core": "^4.11.5"
   },
   "devDependencies": {

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  vdownloader:
+    build: .
+    container_name: vdownloader-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:4000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=4000
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:4000}
+      - DOWNLOAD_TEMP_DIR=${DOWNLOAD_TEMP_DIR:-.tmp/downloads}
+      - MAX_CONCURRENT_JOBS=${MAX_CONCURRENT_JOBS:-2}
+    volumes:
+      - downloads-data:/app/.tmp/downloads
+    networks:
+      - vdownloader-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  downloads-data:
+    driver: local
+
+networks:
+  vdownloader-network:
+    driver: bridge

@@ -2,7 +2,9 @@ class VDownloader {
     constructor() {
         this.platforms = [];
         this.downloadHistory = this.loadHistory();
-        this.activeDownload = null;
+        this.activeDownloads = new Map();
+        this.socket = null;
+        this.API_BASE = window.location.origin;
         
         this.init();
     }
@@ -11,13 +13,61 @@ class VDownloader {
         await this.loadPlatforms();
         this.setupEventListeners();
         this.renderHistory();
+        this.connectWebSocket();
+    }
+
+    connectWebSocket() {
+        if (typeof io === 'undefined') {
+            console.warn('Socket.IO not loaded, will use polling fallback');
+            return;
+        }
+
+        this.socket = io(this.API_BASE);
+
+        this.socket.on('connect', () => {
+            console.log('WebSocket connected');
+        });
+
+        this.socket.on('disconnect', () => {
+            console.log('WebSocket disconnected');
+        });
+
+        this.socket.on('download:progress', (data) => {
+            this.handleDownloadProgress(data);
+        });
+
+        this.socket.on('download:complete', (data) => {
+            this.handleDownloadComplete(data);
+        });
+
+        this.socket.on('download:error', (data) => {
+            this.handleDownloadError(data);
+        });
+    }
+
+    subscribeToDownload(downloadId) {
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('subscribe', downloadId);
+        }
+    }
+
+    unsubscribeFromDownload(downloadId) {
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('unsubscribe', downloadId);
+        }
     }
 
     async loadPlatforms() {
         try {
-            const response = await fetch('/api/platforms');
-            this.platforms = await response.json();
-            this.populatePlatformSelect();
+            const response = await fetch(`${this.API_BASE}/api/platforms`);
+            const result = await response.json();
+            
+            if (result.success) {
+                this.platforms = result.data;
+                this.populatePlatformSelect();
+            } else {
+                throw new Error(result.error?.message || 'Failed to load platforms');
+            }
         } catch (error) {
             console.error('Failed to load platforms:', error);
             this.showError('Failed to load platforms. Please refresh the page.');
@@ -37,20 +87,17 @@ class VDownloader {
     }
 
     setupEventListeners() {
-        // Form submission
         const form = document.getElementById('downloadForm');
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleDownload();
         });
 
-        // Platform change
         const platformSelect = document.getElementById('platform');
         platformSelect.addEventListener('change', () => {
             this.updateQualityOptions();
         });
 
-        // Format change
         const formatRadios = document.querySelectorAll('input[name="format"]');
         formatRadios.forEach(radio => {
             radio.addEventListener('change', () => {
@@ -58,10 +105,9 @@ class VDownloader {
             });
         });
 
-        // URL input validation
         const urlInput = document.getElementById('videoUrl');
         urlInput.addEventListener('input', () => {
-            this.validateUrl();
+            this.validateUrlInput();
         });
     }
 
@@ -79,7 +125,6 @@ class VDownloader {
         const platform = this.platforms.find(p => p.key === platformKey);
         if (!platform) return;
 
-        // Check if platform supports the selected format
         if (!platform.supports.includes(format)) {
             qualityGroup.style.display = 'none';
             this.showError(`${platform.label} does not support ${format} download.`);
@@ -97,7 +142,7 @@ class VDownloader {
         });
     }
 
-    validateUrl() {
+    validateUrlInput() {
         const urlInput = document.getElementById('videoUrl');
         const platformKey = document.getElementById('platform').value;
         
@@ -120,120 +165,283 @@ class VDownloader {
     async handleDownload() {
         const formData = new FormData(document.getElementById('downloadForm'));
         const downloadData = {
-            platform: formData.get('platform'),
             url: formData.get('videoUrl'),
             format: formData.get('format'),
             quality: formData.get('quality')
         };
 
-        // Validate
-        if (!downloadData.platform || !downloadData.url || !downloadData.quality) {
+        if (!downloadData.url || !downloadData.quality) {
             this.showError('Please fill in all required fields.');
             return;
         }
 
         try {
-            this.startDownload(downloadData);
-            await this.performDownload(downloadData);
+            this.toggleFormState(true);
+
+            const validated = await this.validateUrl(downloadData.url);
+            
+            if (!validated.valid) {
+                this.showError(validated.error || 'Invalid URL');
+                this.toggleFormState(false);
+                return;
+            }
+
+            const download = await this.initiateDownload(downloadData);
+            
+            if (download) {
+                this.showSuccess('Download started successfully!');
+                this.addActiveDownload(download, validated.metadata);
+            }
+
         } catch (error) {
             this.showError('Download failed: ' + error.message);
-            this.resetDownloadState();
+            this.toggleFormState(false);
         }
     }
 
-    startDownload(downloadData) {
-        this.activeDownload = {
-            ...downloadData,
-            startTime: Date.now(),
+    async validateUrl(url) {
+        try {
+            const response = await fetch(`${this.API_BASE}/api/validate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                return {
+                    valid: true,
+                    platform: result.data.platform,
+                    metadata: result.data.metadata
+                };
+            } else {
+                return {
+                    valid: false,
+                    error: result.error?.message || 'Validation failed'
+                };
+            }
+        } catch (error) {
+            console.error('Validation error:', error);
+            return {
+                valid: false,
+                error: 'Failed to validate URL'
+            };
+        }
+    }
+
+    async initiateDownload(downloadData) {
+        try {
+            const response = await fetch(`${this.API_BASE}/api/download`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(downloadData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                return result.data;
+            } else {
+                throw new Error(result.error?.message || 'Download initiation failed');
+            }
+        } catch (error) {
+            console.error('Download initiation error:', error);
+            throw error;
+        }
+    }
+
+    addActiveDownload(download, metadata) {
+        const downloadInfo = {
+            ...download,
+            metadata: metadata || {},
             progress: 0,
             speed: 0,
-            status: 'downloading'
+            startTime: Date.now()
         };
 
-        // Show progress section
-        const progressSection = document.getElementById('progressSection');
-        progressSection.style.display = 'block';
-        progressSection.classList.add('fade-in');
-
-        // Update UI
-        this.updateProgressUI();
-        
-        // Disable form
-        this.toggleFormState(true);
+        this.activeDownloads.set(download.downloadId, downloadInfo);
+        this.subscribeToDownload(download.downloadId);
+        this.renderActiveDownloads();
+        this.startPolling(download.downloadId);
     }
 
-    async performDownload(downloadData) {
-        // Simulate download progress
-        const duration = 3000 + Math.random() * 2000; // 3-5 seconds
-        const steps = 20;
-        const stepDuration = duration / steps;
-
-        for (let i = 0; i <= steps; i++) {
-            await new Promise(resolve => setTimeout(resolve, stepDuration));
+    startPolling(downloadId) {
+        const pollInterval = setInterval(async () => {
+            const download = this.activeDownloads.get(downloadId);
             
-            this.activeDownload.progress = Math.min(100, (i / steps) * 100);
-            this.activeDownload.speed = 500 + Math.random() * 1500; // KB/s
-            
-            this.updateProgressUI();
-        }
+            if (!download || download.status === 'completed' || download.status === 'failed' || download.status === 'cancelled') {
+                clearInterval(pollInterval);
+                return;
+            }
 
-        // Complete download
-        this.completeDownload();
+            if (this.socket && this.socket.connected) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${this.API_BASE}/api/status/${downloadId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    this.handleDownloadProgress({
+                        downloadId,
+                        ...result.data
+                    });
+
+                    if (result.data.status === 'completed') {
+                        this.handleDownloadComplete({
+                            downloadId,
+                            ...result.data
+                        });
+                    } else if (result.data.status === 'failed') {
+                        this.handleDownloadError({
+                            downloadId,
+                            error: result.data.error
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }, 1000);
     }
 
-    updateProgressUI() {
-        if (!this.activeDownload) return;
+    handleDownloadProgress(data) {
+        const download = this.activeDownloads.get(data.downloadId);
+        if (!download) return;
 
-        const progressFill = document.getElementById('progressFill');
-        const progressPercentage = document.querySelector('.progress-percentage');
-        const progressSpeed = document.querySelector('.progress-speed');
-        const progressTime = document.querySelector('.progress-time');
-        const progressTitle = document.querySelector('.progress-title');
+        Object.assign(download, {
+            progress: data.progress || 0,
+            speed: data.speed || 0,
+            bytesDownloaded: data.bytesDownloaded || 0,
+            totalBytes: data.totalBytes || 0,
+            status: data.status
+        });
 
-        progressFill.style.width = `${this.activeDownload.progress}%`;
-        progressPercentage.textContent = `${Math.round(this.activeDownload.progress)}%`;
-        progressSpeed.textContent = `${Math.round(this.activeDownload.speed)} KB/s`;
-
-        // Calculate remaining time
-        if (this.activeDownload.progress > 0) {
-            const elapsed = Date.now() - this.activeDownload.startTime;
-            const totalEstimated = (elapsed / this.activeDownload.progress) * 100;
-            const remaining = Math.max(0, totalEstimated - elapsed);
-            const remainingSeconds = Math.round(remaining / 1000);
-            progressTime.textContent = `Remaining: ${remainingSeconds}s`;
-        } else {
-            progressTime.textContent = 'Remaining: --';
-        }
-
-        // Update title
-        const platform = this.platforms.find(p => p.key === this.activeDownload.platform);
-        progressTitle.textContent = `Downloading from ${platform?.label || 'Unknown'}...`;
+        this.renderActiveDownloads();
     }
 
-    completeDownload() {
-        if (!this.activeDownload) return;
+    handleDownloadComplete(data) {
+        const download = this.activeDownloads.get(data.downloadId);
+        if (!download) return;
 
-        this.activeDownload.status = 'completed';
-        this.activeDownload.completedAt = Date.now();
+        download.status = 'completed';
+        download.progress = 100;
+        download.completedAt = data.completedAt || new Date().toISOString();
 
-        // Add to history
-        this.addToHistory(this.activeDownload);
+        this.addToHistory(download);
+        this.unsubscribeFromDownload(data.downloadId);
 
-        // Show success message
-        this.showSuccess('Download completed successfully!');
-
-        // Reset after a delay
         setTimeout(() => {
-            this.resetDownloadState();
-        }, 2000);
+            this.activeDownloads.delete(data.downloadId);
+            this.renderActiveDownloads();
+            
+            if (this.activeDownloads.size === 0) {
+                this.toggleFormState(false);
+            }
+        }, 3000);
+
+        this.renderActiveDownloads();
+    }
+
+    handleDownloadError(data) {
+        const download = this.activeDownloads.get(data.downloadId);
+        if (!download) return;
+
+        download.status = 'failed';
+        download.error = data.error;
+
+        this.showError(`Download failed: ${data.error}`);
+        this.unsubscribeFromDownload(data.downloadId);
+
+        setTimeout(() => {
+            this.activeDownloads.delete(data.downloadId);
+            this.renderActiveDownloads();
+            
+            if (this.activeDownloads.size === 0) {
+                this.toggleFormState(false);
+            }
+        }, 5000);
+
+        this.renderActiveDownloads();
+    }
+
+    renderActiveDownloads() {
+        const progressSection = document.getElementById('progressSection');
+        
+        if (this.activeDownloads.size === 0) {
+            progressSection.style.display = 'none';
+            return;
+        }
+
+        progressSection.style.display = 'block';
+        progressSection.innerHTML = '';
+
+        this.activeDownloads.forEach((download, downloadId) => {
+            const downloadElement = this.createDownloadProgressElement(download);
+            progressSection.appendChild(downloadElement);
+        });
+    }
+
+    createDownloadProgressElement(download) {
+        const div = document.createElement('div');
+        div.className = 'progress-card fade-in';
+
+        const title = download.metadata?.title || download.url;
+        const platform = this.platforms.find(p => p.key === download.platform);
+        const platformLabel = platform?.label || 'Unknown';
+
+        const elapsed = Date.now() - download.startTime;
+        const totalEstimated = download.progress > 0 ? (elapsed / download.progress) * 100 : 0;
+        const remaining = Math.max(0, totalEstimated - elapsed);
+        const remainingSeconds = Math.round(remaining / 1000);
+
+        const speedKBs = Math.round(download.speed || 0);
+        const progressPercent = Math.round(download.progress || 0);
+
+        const statusClass = download.status === 'completed' ? 'completed' : 
+                           download.status === 'failed' ? 'failed' : 'downloading';
+
+        div.innerHTML = `
+            <div class="progress-header">
+                <div class="progress-title">${this.escapeHtml(title)}</div>
+                <div class="progress-platform">${platformLabel} • ${download.format} • ${download.quality || 'Auto'}</div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill ${statusClass}" style="width: ${progressPercent}%"></div>
+            </div>
+            <div class="progress-info">
+                <span class="progress-percentage">${progressPercent}%</span>
+                <span class="progress-speed">${speedKBs} KB/s</span>
+                <span class="progress-time">${download.status === 'completed' ? 'Completed' : `${remainingSeconds}s remaining`}</span>
+            </div>
+        `;
+
+        return div;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     addToHistory(download) {
         const historyItem = {
             id: Date.now(),
-            ...download,
-            title: this.extractVideoTitle(download.url),
-            thumbnail: this.generateThumbnailUrl(download.url)
+            downloadId: download.downloadId,
+            url: download.url,
+            platform: download.platform,
+            format: download.format,
+            quality: download.quality,
+            title: download.metadata?.title || this.extractVideoTitle(download.url, download.platform),
+            thumbnail: download.metadata?.thumbnail || this.generateThumbnailUrl(download.url),
+            completedAt: download.completedAt || Date.now()
         };
 
         this.downloadHistory.unshift(historyItem);
@@ -245,9 +453,8 @@ class VDownloader {
         this.renderHistory();
     }
 
-    extractVideoTitle(url) {
-        // Simple title extraction - in real app, this would come from API
-        const platform = this.platforms.find(p => p.key === this.activeDownload.platform);
+    extractVideoTitle(url, platformKey) {
+        const platform = this.platforms.find(p => p.key === platformKey);
         const videoId = this.extractVideoId(url, platform);
         return `Video from ${platform?.label || 'Unknown'} (${videoId})`;
     }
@@ -255,7 +462,6 @@ class VDownloader {
     extractVideoId(url, platform) {
         if (!platform) return 'Unknown';
         
-        // Simple ID extraction - would be more sophisticated in real app
         for (const domain of platform.domains) {
             if (url.includes(domain)) {
                 const parts = url.split('/');
@@ -266,7 +472,6 @@ class VDownloader {
     }
 
     generateThumbnailUrl(url) {
-        // Generate a placeholder thumbnail URL
         return `https://picsum.photos/seed/${encodeURIComponent(url)}/320/180.jpg`;
     }
 
@@ -302,7 +507,7 @@ class VDownloader {
                 <i class="${iconClass}"></i>
             </div>
             <div class="history-item-details">
-                <div class="history-item-title">${item.title}</div>
+                <div class="history-item-title">${this.escapeHtml(item.title)}</div>
                 <div class="history-item-meta">
                     ${platform?.label || 'Unknown'} • ${item.quality} ${item.format} • 
                     ${this.formatDate(item.completedAt)}
@@ -324,7 +529,8 @@ class VDownloader {
             'vimeo': 'fab fa-vimeo',
             'tiktok': 'fab fa-tiktok',
             'twitter': 'fab fa-twitter',
-            'instagram': 'fab fa-instagram'
+            'instagram': 'fab fa-instagram',
+            'reddit': 'fab fa-reddit'
         };
         return iconMap[platformKey] || 'fas fa-video';
     }
@@ -349,43 +555,28 @@ class VDownloader {
         const item = this.downloadHistory.find(h => h.id == itemId);
         if (!item) return;
 
-        // Populate form with previous data
         document.getElementById('platform').value = item.platform;
         document.getElementById('videoUrl').value = item.url;
         document.querySelector(`input[name="format"][value="${item.format}"]`).checked = true;
         this.updateQualityOptions();
         document.getElementById('quality').value = item.quality;
 
-        // Scroll to form
         document.querySelector('.download-section').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    resetDownloadState() {
-        this.activeDownload = null;
-        
-        // Hide progress section
-        const progressSection = document.getElementById('progressSection');
-        progressSection.style.display = 'none';
-
-        // Reset form
-        document.getElementById('downloadForm').reset();
-        document.getElementById('qualityGroup').style.display = 'none';
-
-        // Enable form
-        this.toggleFormState(false);
     }
 
     toggleFormState(disabled) {
         const form = document.getElementById('downloadForm');
         const button = document.getElementById('downloadBtn');
-        const inputs = form.querySelectorAll('input, select, button');
+        const inputs = form.querySelectorAll('input, select');
 
         inputs.forEach(input => {
             input.disabled = disabled;
         });
 
+        button.disabled = disabled;
+
         if (disabled) {
-            button.innerHTML = '<span class="spinner"></span> Downloading...';
+            button.innerHTML = '<span class="spinner"></span> Processing...';
         } else {
             button.innerHTML = '<i class="fas fa-download"></i> Download';
         }
@@ -400,15 +591,13 @@ class VDownloader {
     }
 
     showMessage(message, type) {
-        // Create message element
         const messageDiv = document.createElement('div');
         messageDiv.className = `message message-${type} fade-in`;
         messageDiv.innerHTML = `
             <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i>
-            <span>${message}</span>
+            <span>${this.escapeHtml(message)}</span>
         `;
 
-        // Add styles if not already added
         if (!document.querySelector('#message-styles')) {
             const style = document.createElement('style');
             style.id = 'message-styles';
@@ -438,10 +627,8 @@ class VDownloader {
             document.head.appendChild(style);
         }
 
-        // Add to page
         document.body.appendChild(messageDiv);
 
-        // Remove after 5 seconds
         setTimeout(() => {
             messageDiv.style.opacity = '0';
             setTimeout(() => {
@@ -471,7 +658,6 @@ class VDownloader {
     }
 }
 
-// Initialize the app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new VDownloader();
 });
