@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const applyRoutes = require("./routes");
+const { errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
 
@@ -18,5 +19,8 @@ applyRoutes(app);
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 module.exports = app;

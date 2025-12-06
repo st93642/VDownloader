@@ -10,15 +10,23 @@ VDownloader is a cross-platform video downloading web application with a Node.js
 ├── backend
 │   ├── app.js
 │   ├── controllers
+│   │   ├── downloadController.js    # Download management endpoints
 │   │   ├── healthController.js
 │   │   └── platformController.js
+│   ├── middleware
+│   │   ├── errorHandler.js          # Centralized error handling
+│   │   └── rateLimiter.js           # Rate limiting middleware
 │   ├── routes
+│   │   ├── downloadRoutes.js        # Download API routes
 │   │   ├── healthRoutes.js
 │   │   ├── index.js
 │   │   └── platformRoutes.js
 │   ├── server.js
-│   └── services
-│       └── platformService.js
+│   ├── services
+│   │   ├── downloadService.js       # Download tracking service
+│   │   └── platformService.js
+│   └── utils
+│       └── urlValidator.js          # URL validation utilities
 ├── config
 │   ├── index.js
 │   └── platforms.js
@@ -40,6 +48,7 @@ VDownloader is a cross-platform video downloading web application with a Node.js
 - **dotenv** – Loads environment variables from `.env` files for local development.
 - **ytdl-core** – Provides YouTube download and metadata capabilities.
 - **fluent-ffmpeg** – Adapter around FFmpeg for advanced media processing.
+- **express-rate-limit** – Middleware for rate limiting API requests to prevent abuse.
 - **nodemon** – Development dependency that reloads the server as files change.
 
 ## Getting Started
@@ -96,11 +105,26 @@ Supported platforms and their metadata are centralized in `config/platforms.js`.
 
 ## API Routes
 
+### Health & Platform Information
 | Method | Route | Description |
 | --- | --- | --- |
 | `GET` | `/api/health` | Returns service health metadata and enabled platforms |
 | `GET` | `/api/platforms` | Lists all configured platforms |
 | `GET` | `/api/platforms/supported` | Lists only currently enabled platforms |
+
+### Download Management
+| Method | Route | Description |
+| --- | --- | --- |
+| `POST` | `/api/validate` | Validate a video URL before processing |
+| `POST` | `/api/download` | Initiate a new video download |
+| `GET` | `/api/status/:downloadId` | Check the status of an ongoing/completed download |
+| `DELETE` | `/api/cancel/:downloadId` | Cancel an ongoing download |
+| `GET` | `/api/formats/:platform` | Get available formats and quality options for a platform |
+
+### Rate Limiting
+- **Download requests**: 10 per hour (prevents abuse)
+- **Validation requests**: 30 per minute (allows URL checking)
+- **Status checks**: 100 per minute (allows frequent polling)
 
 ## Frontend Features
 
