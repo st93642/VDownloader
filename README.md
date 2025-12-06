@@ -1,6 +1,6 @@
 # VDownloader
 
-VDownloader is a cross-platform video downloading web application with a Node.js/Express backend and a modern, responsive frontend. This project provides a complete solution for downloading videos from multiple platforms including YouTube, TikTok, X (Twitter), and Instagram.
+VDownloader is a cross-platform video downloading web application with a Node.js/Express backend and a modern, responsive frontend. This project provides a complete solution for downloading videos from multiple platforms including YouTube, TikTok, X (Twitter), Instagram, and Reddit.
 
 ## Project Structure
 
@@ -8,6 +8,14 @@ VDownloader is a cross-platform video downloading web application with a Node.js
 ├── .env.example
 ├── .gitignore
 ├── backend
+│   ├── adapters
+│   │   ├── baseAdapter.js           # Abstract base adapter class
+│   │   ├── adapterFactory.js       # Factory for creating platform adapters
+│   │   ├── youtubeAdapter.js       # YouTube video extraction
+│   │   ├── tiktokAdapter.js        # TikTok video extraction
+│   │   ├── twitterAdapter.js       # X/Twitter video extraction
+│   │   ├── instagramAdapter.js     # Instagram video extraction
+│   │   └── redditAdapter.js        # Reddit video extraction
 │   ├── app.js
 │   ├── controllers
 │   │   ├── downloadController.js    # Download management endpoints
@@ -24,7 +32,8 @@ VDownloader is a cross-platform video downloading web application with a Node.js
 │   ├── server.js
 │   ├── services
 │   │   ├── downloadService.js       # Download tracking service
-│   │   └── platformService.js
+│   │   ├── platformService.js       # Platform configuration service
+│   │   └── platformDownloadService.js # Platform download operations
 │   └── utils
 │       └── urlValidator.js          # URL validation utilities
 ├── config
@@ -36,6 +45,7 @@ VDownloader is a cross-platform video downloading web application with a Node.js
 │   ├── script.js       # JavaScript application logic
 │   └── README.md       # Frontend documentation
 ├── LICENSE
+├── PLATFORM_INTEGRATIONS.md # Multi-platform integration documentation
 ├── README.md
 ├── package.json
 └── package-lock.json
@@ -46,7 +56,10 @@ VDownloader is a cross-platform video downloading web application with a Node.js
 - **Express** – HTTP server framework used to build the REST API.
 - **cors** – Enables controlled Cross-Origin Resource Sharing for the frontend.
 - **dotenv** – Loads environment variables from `.env` files for local development.
-- **ytdl-core** – Provides YouTube download and metadata capabilities.
+- **@distube/ytdl-core** – Provides YouTube download and metadata capabilities.
+- **axios** – HTTP client for web scraping and API requests.
+- **cheerio** – HTML parser for web scraping platforms.
+- **node-fetch** – Modern fetch implementation for HTTP requests.
 - **fluent-ffmpeg** – Adapter around FFmpeg for advanced media processing.
 - **express-rate-limit** – Middleware for rate limiting API requests to prevent abuse.
 - **nodemon** – Development dependency that reloads the server as files change.
@@ -81,11 +94,12 @@ The frontend is a complete, responsive web application that works with the backe
 
 The frontend includes:
 - Modern, responsive UI with gradient design
-- Multi-platform support (YouTube, TikTok, X, Instagram)
+- Multi-platform support (YouTube, TikTok, X, Instagram, Reddit)
 - Real-time download progress tracking
 - Download history management
 - Format and quality selection
 - Mobile-optimized interface
+- Metadata extraction for all supported platforms
 
 For detailed frontend documentation, see `frontend/README.md`.
 
@@ -111,15 +125,17 @@ Supported platforms and their metadata are centralized in `config/platforms.js`.
 | `GET` | `/api/health` | Returns service health metadata and enabled platforms |
 | `GET` | `/api/platforms` | Lists all configured platforms |
 | `GET` | `/api/platforms/supported` | Lists only currently enabled platforms |
+| `GET` | `/api/platforms/capabilities` | Lists platform capabilities and support status |
 
 ### Download Management
 | Method | Route | Description |
 | --- | --- | --- |
-| `POST` | `/api/validate` | Validate a video URL before processing |
+| `POST` | `/api/validate` | Validate a video URL and extract metadata |
 | `POST` | `/api/download` | Initiate a new video download |
 | `GET` | `/api/status/:downloadId` | Check the status of an ongoing/completed download |
 | `DELETE` | `/api/cancel/:downloadId` | Cancel an ongoing download |
 | `GET` | `/api/formats/:platform` | Get available formats and quality options for a platform |
+| `POST` | `/api/metadata` | Extract metadata for a video URL |
 
 ### Rate Limiting
 - **Download requests**: 10 per hour (prevents abuse)

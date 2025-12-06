@@ -6,7 +6,7 @@ const generateDownloadId = () => {
   return crypto.randomBytes(8).toString("hex");
 };
 
-const createDownload = (url, format, platform) => {
+const createDownload = (url, format, platform, downloadInfo = null) => {
   const downloadId = generateDownloadId();
   const download = {
     id: downloadId,
@@ -18,7 +18,8 @@ const createDownload = (url, format, platform) => {
     createdAt: new Date().toISOString(),
     startedAt: null,
     completedAt: null,
-    error: null
+    error: null,
+    downloadInfo
   };
   downloadStore.set(downloadId, download);
   return download;
