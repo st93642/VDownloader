@@ -82,18 +82,54 @@ brew install rust gtk4 yt-dlp
 - Install GTK4 via MSYS2
 - Install yt-dlp: `pip install yt-dlp`
 
-### Building
+### Building and Running
 
 ```bash
 # Clone the repository
 git clone https://github.com/st93642/VDownloader.git
 cd VDownloader
 
-# Build the project (when implemented)
+# Build the project
 cargo build --release
 
-# Run the application (when implemented)
+# Run the application
 cargo run
+
+# Run with logging enabled
+RUST_LOG=info cargo run
+
+# Run tests
+cargo test
+
+# Check code formatting
+cargo fmt --check
+
+# Run linter
+cargo clippy
+```
+
+**Note:** Make sure you have installed GTK4 development libraries before building. See Prerequisites section above.
+
+### Project Structure
+
+```
+VDownloader/
+├── src/
+│   ├── main.rs              # Application entry point
+│   ├── ui/                  # GTK4 user interface
+│   │   ├── mod.rs
+│   │   ├── window.rs        # Main application window
+│   │   └── components/      # Reusable UI components
+│   │       ├── mod.rs
+│   │       └── download_queue.rs
+│   └── core/                # Business logic
+│       ├── mod.rs
+│       ├── downloader.rs    # Video download service
+│       ├── queue.rs         # Download queue management
+│       └── error.rs         # Error types
+├── Cargo.toml              # Project dependencies
+├── README.md               # This file
+└── docs/                   # Additional documentation
 ```
 
 ### Documentation

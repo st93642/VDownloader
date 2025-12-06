@@ -1,292 +1,260 @@
-# Quick Start Guide - VDownloader Development
+# Quick Start Guide
 
-## Selected Technology Stack
-
-### Video Extraction Library
-**Choice**: `youtube_dl` Rust crate v0.10.0
-
-**Why**: 
-- Wraps yt-dlp CLI (137K+ stars, actively maintained)
-- Supports all required platforms: YouTube, TikTok, Twitter, Instagram, Reddit, and 1000+ more
-- MIT/Apache-2.0 license (compatible)
-- Clean Rust API with async support
-- Platform API changes handled automatically by yt-dlp team
+This guide will help you get started with developing VDownloader.
 
 ## Prerequisites
 
-### System Requirements
-1. **Rust** (latest stable)
+Before you begin, ensure you have the following installed:
+
+### Required Development Tools
+
+1. **Rust** (latest stable version)
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   source $HOME/.cargo/env
    ```
 
 2. **GTK4 Development Libraries**
-   
+
    **Linux (Ubuntu/Debian):**
    ```bash
+   sudo apt update
    sudo apt install libgtk-4-dev build-essential pkg-config
    ```
-   
+
    **Linux (Fedora):**
    ```bash
-   sudo dnf install gtk4-devel gcc pkg-config
+   sudo dnf install gtk4-devel gcc
    ```
-   
+
    **macOS:**
    ```bash
-   brew install gtk4
+   brew install gtk4 pkg-config
    ```
-   
-   **Windows:**
-   Follow GTK4 installation guide for MSYS2
 
-3. **yt-dlp** (Runtime Dependency)
-   
-   **Linux (apt):**
+   **Windows:**
+   - Install [MSYS2](https://www.msys2.org/)
+   - In MSYS2 terminal:
+     ```bash
+     pacman -S mingw-w64-x86_64-gtk4 mingw-w64-x86_64-toolchain
+     ```
+
+3. **yt-dlp** (Runtime dependency)
+
+   **Linux:**
    ```bash
    sudo apt install yt-dlp
-   ```
-   
-   **Linux/macOS (pip):**
-   ```bash
+   # OR
    pip3 install yt-dlp
    ```
-   
-   **macOS (Homebrew):**
+
+   **macOS:**
    ```bash
    brew install yt-dlp
    ```
-   
-   **Windows (pip):**
+
+   **Windows:**
    ```bash
    pip install yt-dlp
    ```
 
-## Initial Project Setup
+## Building the Project
 
-### 1. Initialize Cargo Project (If not done)
-```bash
-cargo init --name vdownloader
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/st93642/VDownloader.git
+   cd VDownloader
+   ```
 
-### 2. Add Dependencies to Cargo.toml
-```toml
-[package]
-name = "vdownloader"
-version = "0.1.0"
-edition = "2021"
+2. **Build the project:**
+   ```bash
+   cargo build
+   ```
 
-[dependencies]
-gtk4 = { version = "0.9", package = "gtk4" }
-youtube_dl = "0.10.0"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1", features = ["derive"] }
-anyhow = "1"
-```
+3. **Run the application:**
+   ```bash
+   cargo run
+   ```
 
-### 3. Verify yt-dlp Installation
-```bash
-yt-dlp --version
-```
-
-### 4. Test youtube_dl Crate
-Create a simple test to ensure everything works:
-
-```rust
-// src/main.rs (test)
-use youtube_dl::YoutubeDl;
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Test with a short video URL
-    let url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-    
-    let output = YoutubeDl::new(url)
-        .socket_timeout("15")
-        .run()?;
-    
-    if let Some(video) = output.into_single_video() {
-        println!("Title: {}", video.title);
-        println!("Duration: {} seconds", video.duration.unwrap_or(0.0));
-        println!("URL validation successful!");
-    }
-    
-    Ok(())
-}
-```
-
-Run test:
-```bash
-cargo run
-```
-
-## Basic Implementation Example
-
-### Fetch Video Metadata
-```rust
-use youtube_dl::{YoutubeDl, SingleVideo};
-
-async fn get_video_info(url: &str) -> Result<SingleVideo, Box<dyn std::error::Error>> {
-    let output = YoutubeDl::new(url)
-        .socket_timeout("15")
-        .run()?;
-    
-    let video = output.into_single_video()
-        .ok_or("Not a single video")?;
-    
-    Ok(video)
-}
-```
-
-### Download Video
-```rust
-use youtube_dl::YoutubeDl;
-
-async fn download_video(
-    url: &str, 
-    output_dir: &str
-) -> Result<(), Box<dyn std::error::Error>> {
-    YoutubeDl::new(url)
-        .download(true)
-        .output_directory(output_dir)
-        .run()?;
-    
-    Ok(())
-}
-```
-
-### With Format Selection
-```rust
-async fn download_best_quality(
-    url: &str,
-    output_dir: &str
-) -> Result<(), Box<dyn std::error::Error>> {
-    YoutubeDl::new(url)
-        .download(true)
-        .format("bestvideo+bestaudio/best")
-        .output_directory(output_dir)
-        .output_template("%(title)s.%(ext)s")
-        .run()?;
-    
-    Ok(())
-}
-```
-
-## Supported Platforms
-
-The chosen solution supports all target platforms:
-
-- ✅ **YouTube** (youtube.com, youtu.be)
-- ✅ **TikTok** (tiktok.com, vm.tiktok.com)
-- ✅ **Twitter/X** (twitter.com, x.com)
-- ✅ **Instagram** (instagram.com)
-- ✅ **Reddit** (reddit.com, v.redd.it)
-- ✅ **1000+ other sites** (see yt-dlp documentation)
-
-## Error Handling
-
-```rust
-use youtube_dl::YoutubeDl;
-use anyhow::{Result, Context};
-
-async fn safe_download(url: &str) -> Result<()> {
-    YoutubeDl::new(url)
-        .socket_timeout("15")
-        .download(true)
-        .run()
-        .context("Failed to download video")?;
-    
-    Ok(())
-}
-```
-
-## Next Development Steps
-
-1. **Create Basic GTK4 Window**
-   - URL input field
-   - Download button
-   - Status label
-
-2. **Implement Download Service**
-   - Wrap youtube_dl crate
-   - Add error handling
-   - Progress tracking
-
-3. **Connect UI to Service**
-   - Button click handler
-   - Async download in background
-   - Update UI with progress
-
-4. **Add Features**
-   - Format selection
-   - Download queue
-   - History tracking
-
-## Troubleshooting
-
-### yt-dlp Not Found
-**Error**: `youtube-dl not found in PATH`
-
-**Solution**: Install yt-dlp using one of the methods above
-
-### GTK4 Build Errors
-**Error**: `Package gtk4 was not found`
-
-**Solution**: Install GTK4 development libraries for your platform
-
-### Network Timeouts
-**Error**: Download hangs or times out
-
-**Solution**: 
-```rust
-YoutubeDl::new(url)
-    .socket_timeout("30")  // Increase timeout
-    .run()?;
-```
-
-### Platform Extraction Errors
-**Error**: `Unable to extract video info`
-
-**Solution**: Update yt-dlp:
-```bash
-pip3 install --upgrade yt-dlp
-```
-
-## Resources
-
-- [Full Research Document](../RESEARCH_VIDEO_EXTRACTION.md)
-- [Architecture Document](./ARCHITECTURE.md)
-- [youtube_dl crate docs](https://docs.rs/youtube_dl/0.10.0)
-- [yt-dlp documentation](https://github.com/yt-dlp/yt-dlp/wiki)
-- [GTK4 Rust bindings](https://gtk-rs.org/gtk4-rs/)
+4. **Build for release:**
+   ```bash
+   cargo build --release
+   ./target/release/vdownloader
+   ```
 
 ## Development Workflow
 
+### Running with Logging
+
+Enable logging to see debug information:
+
 ```bash
-# 1. Make changes to code
-# 2. Build and test
-cargo build
-
-# 3. Run application
-cargo run
-
-# 4. Run tests (when implemented)
-cargo test
-
-# 5. Format code
-cargo fmt
-
-# 6. Check for issues
-cargo clippy
+RUST_LOG=info cargo run
+RUST_LOG=debug cargo run  # More verbose
 ```
 
-## Summary
+### Running Tests
 
-✅ **Ready to Start Development**
-- Video extraction library selected and justified
-- Dependencies documented
-- Installation instructions provided
-- Basic usage examples included
-- All requirements met (multi-platform, license, maintenance, ease of integration)
+```bash
+# Run all tests
+cargo test
 
-Start building the GTK4 UI and integrate the video download functionality!
+# Run tests with output
+cargo test -- --nocapture
+
+# Run specific test
+cargo test test_detect_platform_youtube
+```
+
+### Code Quality
+
+```bash
+# Format code
+cargo fmt
+
+# Check formatting without modifying
+cargo fmt --check
+
+# Run linter
+cargo clippy
+
+# Run linter with all warnings
+cargo clippy -- -W clippy::all
+```
+
+### Development Build vs Release Build
+
+- **Development build** (`cargo build`):
+  - Faster compilation
+  - Includes debug symbols
+  - No optimizations
+  - Larger binary size
+  - Use during development
+
+- **Release build** (`cargo build --release`):
+  - Slower compilation
+  - Optimized for performance
+  - Smaller binary size (with strip = true)
+  - Use for distribution
+
+## Project Structure
+
+```
+VDownloader/
+├── src/
+│   ├── main.rs              # Application entry point
+│   ├── ui/                  # GTK4 user interface
+│   │   ├── mod.rs
+│   │   ├── window.rs        # Main application window
+│   │   └── components/      # Reusable UI components
+│   │       ├── mod.rs
+│   │       └── download_queue.rs
+│   └── core/                # Business logic
+│       ├── mod.rs
+│       ├── downloader.rs    # Video download service
+│       ├── queue.rs         # Download queue management
+│       └── error.rs         # Error types
+├── Cargo.toml              # Project dependencies
+└── docs/                   # Documentation
+```
+
+## Understanding the Codebase
+
+### Main Entry Point (`src/main.rs`)
+
+The application starts by initializing the GTK4 application and setting up logging:
+
+```rust
+fn main() -> glib::ExitCode {
+    env_logger::init();
+    let app = Application::builder()
+        .application_id(APP_ID)
+        .build();
+    app.connect_activate(build_ui);
+    app.run()
+}
+```
+
+### UI Layer (`src/ui/`)
+
+- **window.rs**: Builds the main application window with URL input, download button, progress bar, and download queue
+- **components/**: Reusable UI components like the download queue display
+
+### Core Layer (`src/core/`)
+
+- **downloader.rs**: Contains the `VideoDownloader` service for handling downloads and platform detection
+- **queue.rs**: Manages the download queue with async operations
+- **error.rs**: Custom error types for better error handling
+
+## Adding Features
+
+### Adding a New UI Component
+
+1. Create a new file in `src/ui/components/`
+2. Add module declaration in `src/ui/components/mod.rs`
+3. Implement the component using GTK4 widgets
+4. Use the component in `window.rs`
+
+Example:
+```rust
+// src/ui/components/settings_panel.rs
+use gtk4::{prelude::*, Box, Label, Orientation};
+
+pub fn create_settings_panel() -> Box {
+    let panel = Box::new(Orientation::Vertical, 6);
+    let label = Label::new(Some("Settings"));
+    panel.append(&label);
+    panel
+}
+```
+
+### Adding a New Core Service
+
+1. Create a new file in `src/core/`
+2. Add module declaration in `src/core/mod.rs`
+3. Implement the service with proper error handling
+4. Add tests
+
+## Common Issues
+
+### GTK4 Not Found
+
+**Error:** `Package gtk4 was not found in the pkg-config search path`
+
+**Solution:** Install GTK4 development libraries (see Prerequisites)
+
+### yt-dlp Not Found
+
+**Error:** Runtime error when trying to download
+
+**Solution:** Install yt-dlp system-wide (see Prerequisites)
+
+### Compilation is Slow
+
+**Tip:** Use `cargo build` (debug build) during development. Only use `cargo build --release` for testing final performance or distribution.
+
+### Application Window Doesn't Open
+
+**On Linux:** Ensure you're running in an environment with a display server (X11 or Wayland).
+
+**Testing without display:**
+```bash
+# Build succeeds but running requires display
+cargo build  # This will work
+cargo run    # This requires a display server
+```
+
+## Next Steps
+
+- Read the [Architecture Document](./ARCHITECTURE.md) to understand the system design
+- Check out [RESEARCH_VIDEO_EXTRACTION.md](../RESEARCH_VIDEO_EXTRACTION.md) for details on the video extraction library choice
+- Start implementing download functionality using the `youtube_dl` crate
+- Add more UI components for better user experience
+
+## Getting Help
+
+- Check the [GitHub Issues](https://github.com/st93642/VDownloader/issues) for known problems
+- Review the main [README](../README.md) for general information
+- Look at the inline documentation in the source code
+
+Happy coding! 🦀
