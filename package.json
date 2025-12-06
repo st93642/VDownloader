@@ -1,0 +1,40 @@
+{
+  "name": "vdownloader",
+  "version": "0.1.0",
+  "description": "Video downloader web application backend and scaffolding",
+  "main": "backend/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js"
+  },
+  "keywords": [
+    "video",
+    "downloader",
+    "express",
+    "node"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "ytdl-core": "^4.11.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/st93642/VDownloader.git"
+  },
+  "bugs": {
+    "url": "https://github.com/st93642/VDownloader/issues"
+  },
+  "homepage": "https://github.com/st93642/VDownloader#readme"
+}
