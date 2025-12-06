@@ -1,5 +1,8 @@
+use crate::core::downloader::{DownloadRequest, VideoDownloader};
+use crate::core::error::DownloadError;
 use gtk4::{
     prelude::*, Application, ApplicationWindow, Box, Button, Entry, FileDialog, Label, Orientation,
+    ProgressBar,
 };
 use log::info;
 use std::cell::RefCell;
@@ -88,6 +91,13 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     dir_box.append(&path_label);
     dir_box.append(&browse_button);
 
+    // Progress bar
+    let progress_bar = ProgressBar::builder()
+        .margin_top(12)
+        .show_text(true)
+        .build();
+    progress_bar.set_visible(false);
+
     // Status label
     let status_label = Label::new(Some("Ready to download"));
     status_label.set_halign(gtk4::Align::Start);
@@ -102,6 +112,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     let url_entry_clone = url_entry.clone();
     let selected_path_clone = selected_path.clone();
     let status_label_clone = status_label.clone();
+    let progress_bar_clone = progress_bar.clone();
     download_button.connect_clicked(move |btn| {
         let url = url_entry_clone.text();
         let path = selected_path_clone.borrow().clone();
@@ -113,7 +124,6 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
             return;
         }
 
-        // Basic URL validation
         if !url.starts_with("http://") && !url.starts_with("https://") {
             status_label_clone
                 .set_label("Error: Invalid URL (must start with http:// or https://)");
@@ -126,19 +136,57 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
 
         status_label_clone.remove_css_class("error");
         status_label_clone.add_css_class("dim-label");
-        status_label_clone.set_label(&format!("Downloading from {}...", url));
+        status_label_clone.set_label("Validating and starting download...");
 
         btn.set_label("Downloading...");
         btn.set_sensitive(false);
+        progress_bar_clone.set_visible(true);
+        progress_bar_clone.set_fraction(0.0);
 
-        // TODO: Implement actual download logic here
-        // For now, just simulate completion after a moment
         let btn_clone = btn.clone();
         let status_label_clone2 = status_label_clone.clone();
-        gtk4::glib::timeout_add_seconds_local_once(2, move || {
-            btn_clone.set_label("Download");
-            btn_clone.set_sensitive(true);
-            status_label_clone2.set_label("Download completed successfully!");
+        let progress_bar_clone2 = progress_bar_clone.clone();
+        let url_clone = url.to_string();
+
+        gtk4::glib::spawn_future_local(async move {
+            let downloader = VideoDownloader::new(path.clone());
+            let platform = VideoDownloader::detect_platform(&url_clone);
+            let request = DownloadRequest {
+                url: url_clone.clone(),
+                platform,
+                output_path: Some(path.clone()),
+            };
+
+            progress_bar_clone2.set_fraction(0.5);
+            progress_bar_clone2.set_text(Some("50%"));
+
+            match downloader.download(request).await {
+                Ok(file_path) => {
+                    info!("Download successful: {}", file_path);
+                    status_label_clone2.remove_css_class("dim-label");
+                    status_label_clone2.add_css_class("success");
+                    status_label_clone2
+                        .set_label("Download completed! File saved to download directory");
+                    progress_bar_clone2.set_fraction(1.0);
+                    progress_bar_clone2.set_text(Some("100%"));
+                    btn_clone.set_label("Download");
+                    btn_clone.set_sensitive(true);
+
+                    gtk4::glib::timeout_add_seconds_local_once(5, move || {
+                        progress_bar_clone2.set_visible(false);
+                    });
+                }
+                Err(e) => {
+                    let error_msg = format_error(&e);
+                    info!("Download failed: {}", error_msg);
+                    status_label_clone2.remove_css_class("dim-label");
+                    status_label_clone2.add_css_class("error");
+                    status_label_clone2.set_label(&error_msg);
+                    progress_bar_clone2.set_visible(false);
+                    btn_clone.set_label("Download");
+                    btn_clone.set_sensitive(true);
+                }
+            }
         });
     });
 
@@ -150,9 +198,32 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     main_box.append(&dir_label);
     main_box.append(&dir_box);
     main_box.append(&download_button);
+    main_box.append(&progress_bar);
     main_box.append(&status_label);
 
     window.set_child(Some(&main_box));
 
     window
+}
+
+fn format_error(error: &DownloadError) -> String {
+    match error {
+        DownloadError::InvalidUrl(msg) => format!("Error: Invalid URL - {}", msg),
+        DownloadError::InvalidOutputDirectory => {
+            "Error: Download directory is invalid or not writable".to_string()
+        }
+        DownloadError::NetworkError(msg) => {
+            format!("Error: Network issue - {}. Check your connection", msg)
+        }
+        DownloadError::DownloadFailed(msg) => format!("Error: Download failed - {}", msg),
+        DownloadError::ExtractionError(msg) => format!("Error: Extraction failed - {}", msg),
+        DownloadError::UnsupportedPlatform(platform) => {
+            format!("Error: Platform not supported - {}", platform)
+        }
+        DownloadError::IoError(msg) => format!("Error: File system error - {}", msg),
+        DownloadError::Cancelled => "Download was cancelled".to_string(),
+        DownloadError::VideoNotFound => {
+            "Error: Video not found or unavailable. Check URL and try again".to_string()
+        }
+    }
 }
