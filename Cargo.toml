@@ -1,0 +1,38 @@
+[package]
+name = "vdownloader"
+version = "0.1.0"
+edition = "2021"
+authors = ["VDownloader Contributors"]
+license = "MIT"
+description = "A cross-platform desktop video downloader application"
+repository = "https://github.com/st93642/VDownloader"
+
+[dependencies]
+# GTK4 and GUI dependencies
+gtk4 = { version = "0.9", features = ["v4_10"] }
+glib = "0.20"
+gio = "0.20"
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Video extraction
+youtube_dl = "0.9"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
