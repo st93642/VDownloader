@@ -34,23 +34,35 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     url_label.set_halign(gtk4::Align::Start);
     url_label.set_margin_top(12);
 
+    let url_box = Box::new(Orientation::Horizontal, 12);
+
     let url_entry = Entry::builder()
         .placeholder_text("Enter video URL here...")
         .hexpand(true)
         .build();
 
-    // Download directory section
-    let dir_label = Label::new(Some("Download Directory:"));
+    let clear_button = Button::with_label("Clear");
+    let url_entry_clone = url_entry.clone();
+    clear_button.connect_clicked(move |_| {
+        url_entry_clone.set_text("");
+    });
+
+    url_box.append(&url_entry);
+    url_box.append(&clear_button);
+
+    // Download location section
+    let dir_label = Label::new(Some("Download Location:"));
     dir_label.set_halign(gtk4::Align::Start);
     dir_label.set_margin_top(12);
 
     let dir_box = Box::new(Orientation::Horizontal, 12);
 
-    let selected_path = Rc::new(RefCell::new(
-        std::env::var("HOME")
-            .or_else(|_| std::env::var("USERPROFILE"))
-            .unwrap_or_else(|_| String::from(".")),
-    ));
+    let default_path = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| String::from("."));
+    let default_file = format!("{}/video.mp4", default_path);
+
+    let selected_path = Rc::new(RefCell::new(default_file));
 
     let path_label = Label::new(Some(&*selected_path.borrow()));
     path_label.set_halign(gtk4::Align::Start);
@@ -58,28 +70,29 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     path_label.set_ellipsize(gtk4::pango::EllipsizeMode::Middle);
     path_label.add_css_class("monospace");
 
-    let browse_button = Button::with_label("Browse...");
+    let browse_button = Button::with_label("Save As...");
 
     let window_clone = window.clone();
     let path_label_clone = path_label.clone();
     let selected_path_clone = selected_path.clone();
     browse_button.connect_clicked(move |_| {
         let dialog = FileDialog::builder()
-            .title("Select Download Directory")
+            .title("Save Video As")
+            .initial_name("video.mp4")
             .modal(true)
             .build();
 
         let path_label_clone2 = path_label_clone.clone();
         let selected_path_clone2 = selected_path_clone.clone();
 
-        dialog.select_folder(
+        dialog.save(
             Some(&window_clone),
             None::<&gtk4::gio::Cancellable>,
             move |result| {
                 if let Ok(file) = result {
                     if let Some(path) = file.path() {
                         let path_str = path.display().to_string();
-                        info!("Selected download directory: {}", path_str);
+                        info!("Selected download path: {}", path_str);
                         *selected_path_clone2.borrow_mut() = path_str.clone();
                         path_label_clone2.set_label(&path_str);
                     }
@@ -194,12 +207,16 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     main_box.append(&header);
     main_box.append(&subtitle);
     main_box.append(&url_label);
-    main_box.append(&url_entry);
+    main_box.append(&url_box);
     main_box.append(&dir_label);
     main_box.append(&dir_box);
     main_box.append(&download_button);
     main_box.append(&progress_bar);
     main_box.append(&status_label);
+
+    // Add queue placeholder
+    let queue_placeholder = crate::ui::components::download_queue::create_queue_placeholder();
+    main_box.append(&queue_placeholder);
 
     window.set_child(Some(&main_box));
 

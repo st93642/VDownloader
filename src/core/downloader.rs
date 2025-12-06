@@ -1,5 +1,6 @@
 use crate::core::error::{DownloadError, Result};
 use log::{debug, info, warn};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use youtube_dl::{YoutubeDl, YoutubeDlOutput};
@@ -22,6 +23,7 @@ pub struct DownloadRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum DownloadStatus {
     Pending,
     Downloading { progress: f32 },
@@ -78,6 +80,7 @@ impl VideoDownloader {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn validate_output_directory(output_dir: &str) -> Result<()> {
         let path = Path::new(output_dir);
 
@@ -99,25 +102,50 @@ impl VideoDownloader {
             Err(_) => Err(DownloadError::InvalidOutputDirectory),
         }
     }
-
     pub async fn download(&self, request: DownloadRequest) -> Result<String> {
         info!("Starting download for URL: {}", request.url);
 
-        Self::validate_url(&request.url)?;
-        Self::validate_output_directory(&self.output_directory)?;
+        let url = Self::sanitize_url(&request.url);
+        if url != request.url {
+            info!("Sanitized URL to: {}", url);
+        }
 
-        let output_dir = self.output_directory.clone();
-        let url = request.url.clone();
+        Self::validate_url(&url)?;
+        // Self::validate_output_directory(&self.output_directory)?; // Skip directory validation as we might have a file path
 
-        tokio::task::spawn_blocking(move || Self::perform_download(&url, &output_dir))
+        let output_path = self.output_directory.clone();
+
+        tokio::task::spawn_blocking(move || Self::perform_download(&url, &output_path))
             .await
             .map_err(|e| DownloadError::DownloadFailed(format!("Task join error: {}", e)))?
     }
 
-    fn perform_download(url: &str, output_dir: &str) -> Result<String> {
-        info!("Performing download of {} to {}", url, output_dir);
+    fn sanitize_url(url: &str) -> String {
+        // Handle VK playlist+video URLs by extracting the video ID
+        if url.contains("vk.com") || url.contains("vkvideo.ru") {
+            if let Ok(re) = Regex::new(r"video-?\d+_\d+") {
+                if let Some(mat) = re.find(url) {
+                    return format!("https://vk.com/{}", mat.as_str());
+                }
+            }
+        }
+        url.to_string()
+    }
 
-        let output_template = format!("{}/%%(title)s.%%(ext)s", output_dir);
+    fn perform_download(url: &str, output_path: &str) -> Result<String> {
+        info!("Performing download of {} to {}", url, output_path);
+
+        // If output_path ends with an extension, treat it as a full file path
+        // Otherwise treat it as a directory (legacy behavior, though UI now provides full path)
+        let is_file_path = output_path.ends_with(".mp4")
+            || output_path.ends_with(".mkv")
+            || output_path.ends_with(".webm");
+
+        let output_template = if is_file_path {
+            output_path.to_string()
+        } else {
+            format!("{}/%%(title)s.%%(ext)s", output_path)
+        };
 
         let result = YoutubeDl::new(url)
             .socket_timeout("30")
@@ -128,12 +156,35 @@ impl VideoDownloader {
         match result {
             Ok(YoutubeDlOutput::Playlist(_playlist)) => {
                 warn!("Playlist detected, downloading first video only");
-                Self::handle_playlist_download(url, output_dir)
+                Self::handle_playlist_download(url, output_path, is_file_path)
             }
             Ok(YoutubeDlOutput::SingleVideo(video)) => {
                 let video_title = video.title.clone().unwrap_or_else(|| "video".to_string());
+                info!("Metadata fetched: {}", video_title);
+
+                // Perform actual download
+                let status = std::process::Command::new("yt-dlp")
+                    .arg(url)
+                    .arg("-o")
+                    .arg(&output_template)
+                    .status()
+                    .map_err(|e| {
+                        DownloadError::IoError(format!("Failed to execute yt-dlp: {}", e))
+                    })?;
+
+                if !status.success() {
+                    return Err(DownloadError::DownloadFailed(
+                        "Download process failed".to_string(),
+                    ));
+                }
+
                 info!("Download completed: {}", video_title);
-                Ok(format!("{}/{}", output_dir, video_title))
+                if is_file_path {
+                    Ok(output_path.to_string())
+                } else {
+                    let ext = video.ext.clone().unwrap_or("mp4".to_string());
+                    Ok(format!("{}/{}.{}", output_path, video_title, ext))
+                }
             }
             Err(e) => {
                 let error_msg = e.to_string();
@@ -153,8 +204,12 @@ impl VideoDownloader {
         }
     }
 
-    fn handle_playlist_download(url: &str, output_dir: &str) -> Result<String> {
-        let output_template = format!("{}/%%(title)s.%%(ext)s", output_dir);
+    fn handle_playlist_download(url: &str, output_path: &str, is_file_path: bool) -> Result<String> {
+        let output_template = if is_file_path {
+            output_path.to_string()
+        } else {
+            format!("{}/%%(title)s.%%(ext)s", output_path)
+        };
 
         match YoutubeDl::new(url)
             .socket_timeout("30")
@@ -163,22 +218,74 @@ impl VideoDownloader {
             .playlist_items(1u32)
             .run()
         {
-            Ok(YoutubeDlOutput::Playlist(playlist)) => playlist
-                .entries
-                .and_then(|mut entries| entries.pop())
-                .and_then(|video| video.title.clone())
-                .map(|title| format!("{}/{}", output_dir, title))
-                .ok_or_else(|| {
-                    DownloadError::DownloadFailed("Failed to download from playlist".to_string())
-                }),
+            Ok(YoutubeDlOutput::Playlist(playlist)) => {
+                if let Some(entries) = playlist.entries {
+                    if let Some(video) = entries.first() {
+                        // Perform actual download for the first item
+                        let status = std::process::Command::new("yt-dlp")
+                            .arg(url)
+                            .arg("-o")
+                            .arg(&output_template)
+                            .arg("--playlist-items")
+                            .arg("1")
+                            .status()
+                            .map_err(|e| {
+                                DownloadError::IoError(format!("Failed to execute yt-dlp: {}", e))
+                            })?;
+
+                        if !status.success() {
+                            return Err(DownloadError::DownloadFailed(
+                                "Download process failed".to_string(),
+                            ));
+                        }
+
+                        if is_file_path {
+                            Ok(output_path.to_string())
+                        } else {
+                            let title = video.title.clone().unwrap_or("video".to_string());
+                            let ext = video.ext.clone().unwrap_or("mp4".to_string());
+                            Ok(format!("{}/{}.{}", output_path, title, ext))
+                        }
+                    } else {
+                        Err(DownloadError::DownloadFailed("Empty playlist".to_string()))
+                    }
+                } else {
+                    Err(DownloadError::DownloadFailed(
+                        "Failed to get playlist entries".to_string(),
+                    ))
+                }
+            }
             Ok(YoutubeDlOutput::SingleVideo(video)) => {
+                // Should not happen if playlist_items is used, but handle it just in case
                 let video_title = video.title.clone().unwrap_or_else(|| "video".to_string());
-                Ok(format!("{}/{}", output_dir, video_title))
+                let ext = video.ext.clone().unwrap_or("mp4".to_string());
+
+                let status = std::process::Command::new("yt-dlp")
+                    .arg(url)
+                    .arg("-o")
+                    .arg(&output_template)
+                    .status()
+                    .map_err(|e| {
+                        DownloadError::IoError(format!("Failed to execute yt-dlp: {}", e))
+                    })?;
+
+                if !status.success() {
+                    return Err(DownloadError::DownloadFailed(
+                        "Download process failed".to_string(),
+                    ));
+                }
+
+                if is_file_path {
+                    Ok(output_path.to_string())
+                } else {
+                    Ok(format!("{}/{}.{}", output_path, video_title, ext))
+                }
             }
             Err(e) => Err(DownloadError::DownloadFailed(e.to_string())),
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_output_directory(&self) -> &str {
         &self.output_directory
     }
@@ -244,5 +351,20 @@ mod tests {
     #[test]
     fn test_validate_output_directory_invalid() {
         assert!(VideoDownloader::validate_output_directory("/nonexistent/path/12345").is_err());
+    }
+
+    #[test]
+    fn test_sanitize_url_vk() {
+        let url = "https://vkvideo.ru/playlist/-220754053_3/video-220754053_456244420?linked=1";
+        let sanitized = VideoDownloader::sanitize_url(url);
+        assert_eq!(sanitized, "https://vk.com/video-220754053_456244420");
+
+        let url_simple = "https://vk.com/video-220754053_456244420";
+        let sanitized_simple = VideoDownloader::sanitize_url(url_simple);
+        assert_eq!(sanitized_simple, "https://vk.com/video-220754053_456244420");
+
+        let url_no_video = "https://vkvideo.ru/playlist/-220754053_3";
+        let sanitized_no_video = VideoDownloader::sanitize_url(url_no_video);
+        assert_eq!(sanitized_no_video, url_no_video);
     }
 }

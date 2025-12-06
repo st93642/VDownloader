@@ -10,6 +10,10 @@ fn main() -> glib::ExitCode {
     env_logger::init();
     info!("Starting VDownloader application");
 
+    // Initialize Tokio runtime
+    let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+    let _guard = runtime.enter();
+
     let app = Application::builder().application_id(APP_ID).build();
 
     app.connect_activate(build_ui);
@@ -18,6 +22,11 @@ fn main() -> glib::ExitCode {
 }
 
 fn build_ui(app: &Application) {
+    // Enable dark theme
+    if let Some(settings) = gtk4::Settings::default() {
+        settings.set_gtk_application_prefer_dark_theme(true);
+    }
+
     let window = ui::window::build_window(app);
     window.present();
 }

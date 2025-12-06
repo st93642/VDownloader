@@ -35,6 +35,7 @@ The previous Node.js/Express web application has been removed to make way for a 
 After thorough research, we've selected the **`youtube_dl` Rust crate** (wrapper around yt-dlp CLI) as our video extraction solution.
 
 **Why this choice?**
+
 - ✅ Supports all target platforms (YouTube, TikTok, Twitter, Instagram, Reddit) plus 1000+ sites
 - ✅ Leverages industry-standard yt-dlp (137K+ GitHub stars, actively maintained)
 - ✅ MIT/Apache-2.0 license compatible
@@ -50,15 +51,18 @@ This project is in early development. The architecture and technology stack have
 ### Prerequisites
 
 **Development Tools:**
+
 - Rust (latest stable version)
 - GTK4 development libraries
 - Cargo
 - pkg-config
 
 **Runtime Dependencies:**
+
 - yt-dlp (Python CLI tool)
 
 **Linux (Ubuntu/Debian):**
+
 ```bash
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -72,13 +76,15 @@ sudo apt install yt-dlp
 ```
 
 **macOS:**
+
 ```bash
 # Install dependencies via Homebrew
 brew install rust gtk4 yt-dlp
 ```
 
 **Windows:**
-- Install Rust from https://rustup.rs/
+
+- Install Rust from <https://rustup.rs/>
 - Install GTK4 via MSYS2
 - Install yt-dlp: `pip install yt-dlp`
 
@@ -112,7 +118,7 @@ cargo clippy
 
 ### Project Structure
 
-```
+```text
 VDownloader/
 ├── src/
 │   ├── main.rs              # Application entry point

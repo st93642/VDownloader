@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
+#[allow(dead_code)]
 pub enum DownloadError {
     #[error("Invalid URL: {0}")]
     InvalidUrl(String),
@@ -8,7 +9,7 @@ pub enum DownloadError {
     #[error("Download failed: {0}")]
     DownloadFailed(String),
 
-    #[error("Platform not supported: {0}")]
+    #[error("Unsupported platform: {0}")]
     UnsupportedPlatform(String),
 
     #[error("IO error: {0}")]

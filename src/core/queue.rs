@@ -5,17 +5,20 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct QueueItem {
     pub id: String,
     pub request: DownloadRequest,
     pub status: DownloadStatus,
 }
 
+#[allow(dead_code)]
 pub struct DownloadQueue {
     items: Arc<RwLock<HashMap<String, QueueItem>>>,
     next_id: Arc<RwLock<usize>>,
 }
 
+#[allow(dead_code)]
 impl DownloadQueue {
     pub fn new() -> Self {
         Self {
