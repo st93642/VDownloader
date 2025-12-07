@@ -1,8 +1,8 @@
 use crate::core::downloader::{DownloadRequest, VideoDownloader};
 use crate::core::error::DownloadError;
 use gtk4::{
-    prelude::*, Application, ApplicationWindow, Box, Button, Entry, FileDialog, Label, Orientation,
-    ProgressBar,
+    prelude::*, Application, ApplicationWindow, Box, Button, CheckButton, Entry, FileDialog, Label,
+    Orientation, ProgressBar,
 };
 use log::info;
 use std::cell::RefCell;
@@ -57,10 +57,20 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
 
     let dir_box = Box::new(Orientation::Horizontal, 12);
 
-    let default_path = std::env::var("HOME")
+    let home_dir = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| String::from("."));
-    let default_file = format!("{}/video.mp4", default_path);
+
+    let videos_path = std::path::Path::new(&home_dir).join("Videos");
+    if !videos_path.exists() {
+        let _ = std::fs::create_dir_all(&videos_path);
+    }
+
+    let default_file = if videos_path.exists() {
+        videos_path.join("video.mp4").to_string_lossy().to_string()
+    } else {
+        format!("{}/video.mp4", home_dir)
+    };
 
     let selected_path = Rc::new(RefCell::new(default_file));
 
@@ -117,6 +127,10 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     status_label.set_margin_top(12);
     status_label.add_css_class("dim-label");
 
+    // Overwrite checkbox
+    let overwrite_check = CheckButton::with_label("Overwrite existing files");
+    overwrite_check.set_margin_top(12);
+
     // Download button
     let download_button = Button::with_label("Download");
     download_button.add_css_class("suggested-action");
@@ -126,9 +140,12 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     let selected_path_clone = selected_path.clone();
     let status_label_clone = status_label.clone();
     let progress_bar_clone = progress_bar.clone();
+    let overwrite_check_clone = overwrite_check.clone();
+
     download_button.connect_clicked(move |btn| {
         let url = url_entry_clone.text();
         let path = selected_path_clone.borrow().clone();
+        let overwrite = overwrite_check_clone.is_active();
 
         if url.is_empty() {
             status_label_clone.set_label("Error: Please enter a video URL");
@@ -155,11 +172,30 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
         btn.set_sensitive(false);
         progress_bar_clone.set_visible(true);
         progress_bar_clone.set_fraction(0.0);
+        progress_bar_clone.set_text(Some("0%"));
 
         let btn_clone = btn.clone();
         let status_label_clone2 = status_label_clone.clone();
-        let progress_bar_clone2 = progress_bar_clone.clone();
         let url_clone = url.to_string();
+
+        // Create a channel for progress updates
+        let (sender, receiver) = std::sync::mpsc::channel();
+
+        let progress_bar_clone_updater = progress_bar_clone.clone();
+        gtk4::glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+            loop {
+                match receiver.try_recv() {
+                    Ok(progress) => {
+                        progress_bar_clone_updater.set_fraction(progress as f64);
+                        progress_bar_clone_updater.set_text(Some(&format!("{:.0}%", progress * 100.0)));
+                    }
+                    Err(std::sync::mpsc::TryRecvError::Empty) => return gtk4::glib::ControlFlow::Continue,
+                    Err(std::sync::mpsc::TryRecvError::Disconnected) => return gtk4::glib::ControlFlow::Break,
+                }
+            }
+        });
+
+        let progress_bar_clone3 = progress_bar_clone.clone(); // For final update/hiding
 
         gtk4::glib::spawn_future_local(async move {
             let downloader = VideoDownloader::new(path.clone());
@@ -168,25 +204,25 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
                 url: url_clone.clone(),
                 platform,
                 output_path: Some(path.clone()),
+                overwrite,
             };
 
-            progress_bar_clone2.set_fraction(0.5);
-            progress_bar_clone2.set_text(Some("50%"));
-
-            match downloader.download(request).await {
+            match downloader.download(request, move |p| {
+                let _ = sender.send(p);
+            }).await {
                 Ok(file_path) => {
                     info!("Download successful: {}", file_path);
                     status_label_clone2.remove_css_class("dim-label");
                     status_label_clone2.add_css_class("success");
                     status_label_clone2
                         .set_label("Download completed! File saved to download directory");
-                    progress_bar_clone2.set_fraction(1.0);
-                    progress_bar_clone2.set_text(Some("100%"));
+                    progress_bar_clone3.set_fraction(1.0);
+                    progress_bar_clone3.set_text(Some("100%"));
                     btn_clone.set_label("Download");
                     btn_clone.set_sensitive(true);
 
                     gtk4::glib::timeout_add_seconds_local_once(5, move || {
-                        progress_bar_clone2.set_visible(false);
+                        progress_bar_clone3.set_visible(false);
                     });
                 }
                 Err(e) => {
@@ -195,7 +231,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
                     status_label_clone2.remove_css_class("dim-label");
                     status_label_clone2.add_css_class("error");
                     status_label_clone2.set_label(&error_msg);
-                    progress_bar_clone2.set_visible(false);
+                    progress_bar_clone3.set_visible(false);
                     btn_clone.set_label("Download");
                     btn_clone.set_sensitive(true);
                 }
@@ -210,6 +246,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     main_box.append(&url_box);
     main_box.append(&dir_label);
     main_box.append(&dir_box);
+    main_box.append(&overwrite_check);
     main_box.append(&download_button);
     main_box.append(&progress_bar);
     main_box.append(&status_label);

@@ -2,7 +2,9 @@ use crate::core::error::{DownloadError, Result};
 use log::{debug, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
+use std::process::{Command, Stdio};
 use youtube_dl::{YoutubeDl, YoutubeDlOutput};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,6 +22,8 @@ pub struct DownloadRequest {
     pub url: String,
     pub platform: Platform,
     pub output_path: Option<String>,
+    #[serde(default)]
+    pub overwrite: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -102,7 +106,10 @@ impl VideoDownloader {
             Err(_) => Err(DownloadError::InvalidOutputDirectory),
         }
     }
-    pub async fn download(&self, request: DownloadRequest) -> Result<String> {
+    pub async fn download<F>(&self, request: DownloadRequest, on_progress: F) -> Result<String>
+    where
+        F: Fn(f32) + Send + Sync + 'static,
+    {
         info!("Starting download for URL: {}", request.url);
 
         let url = Self::sanitize_url(&request.url);
@@ -114,10 +121,13 @@ impl VideoDownloader {
         // Self::validate_output_directory(&self.output_directory)?; // Skip directory validation as we might have a file path
 
         let output_path = self.output_directory.clone();
+        let overwrite = request.overwrite;
 
-        tokio::task::spawn_blocking(move || Self::perform_download(&url, &output_path))
-            .await
-            .map_err(|e| DownloadError::DownloadFailed(format!("Task join error: {}", e)))?
+        tokio::task::spawn_blocking(move || {
+            Self::perform_download(&url, &output_path, overwrite, on_progress)
+        })
+        .await
+        .map_err(|e| DownloadError::DownloadFailed(format!("Task join error: {}", e)))?
     }
 
     fn sanitize_url(url: &str) -> String {
@@ -132,7 +142,15 @@ impl VideoDownloader {
         url.to_string()
     }
 
-    fn perform_download(url: &str, output_path: &str) -> Result<String> {
+    fn perform_download<F>(
+        url: &str,
+        output_path: &str,
+        overwrite: bool,
+        on_progress: F,
+    ) -> Result<String>
+    where
+        F: Fn(f32) + Send + Sync + 'static,
+    {
         info!("Performing download of {} to {}", url, output_path);
 
         // If output_path ends with an extension, treat it as a full file path
@@ -156,21 +174,60 @@ impl VideoDownloader {
         match result {
             Ok(YoutubeDlOutput::Playlist(_playlist)) => {
                 warn!("Playlist detected, downloading first video only");
-                Self::handle_playlist_download(url, output_path, is_file_path)
+                Self::handle_playlist_download(
+                    url,
+                    output_path,
+                    is_file_path,
+                    overwrite,
+                    on_progress,
+                )
             }
             Ok(YoutubeDlOutput::SingleVideo(video)) => {
                 let video_title = video.title.clone().unwrap_or_else(|| "video".to_string());
                 info!("Metadata fetched: {}", video_title);
 
                 // Perform actual download
-                let status = std::process::Command::new("yt-dlp")
-                    .arg(url)
+                let mut cmd = Command::new("yt-dlp");
+                cmd.arg(url)
                     .arg("-o")
                     .arg(&output_template)
-                    .status()
-                    .map_err(|e| {
-                        DownloadError::IoError(format!("Failed to execute yt-dlp: {}", e))
-                    })?;
+                    .arg("--newline"); // Force newlines for progress parsing
+
+                if overwrite {
+                    cmd.arg("--force-overwrite");
+                }
+
+                cmd.stdout(Stdio::piped());
+
+                let mut child = cmd.spawn().map_err(|e| {
+                    DownloadError::IoError(format!("Failed to execute yt-dlp: {}", e))
+                })?;
+
+                if let Some(stdout) = child.stdout.take() {
+                    let reader = BufReader::new(stdout);
+                    for line in reader.lines() {
+                        if let Ok(line) = line {
+                            // Print to terminal so user sees progress there too
+                            println!("{}", line);
+                            
+                            // Parse progress
+                            // [download]  45.0% of 10.00MiB at 2.00MiB/s ETA 00:05
+                            if line.starts_with("[download]") && line.contains("%") {
+                                if let Some(pct_str) = line.split_whitespace().nth(1) {
+                                    if let Some(pct_val) =
+                                        pct_str.trim_end_matches('%').parse::<f32>().ok()
+                                    {
+                                        on_progress(pct_val / 100.0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let status = child.wait().map_err(|e| {
+                    DownloadError::IoError(format!("Failed to wait for yt-dlp: {}", e))
+                })?;
 
                 if !status.success() {
                     return Err(DownloadError::DownloadFailed(
@@ -204,7 +261,16 @@ impl VideoDownloader {
         }
     }
 
-    fn handle_playlist_download(url: &str, output_path: &str, is_file_path: bool) -> Result<String> {
+    fn handle_playlist_download<F>(
+        url: &str,
+        output_path: &str,
+        is_file_path: bool,
+        overwrite: bool,
+        on_progress: F,
+    ) -> Result<String>
+    where
+        F: Fn(f32) + Send + Sync + 'static,
+    {
         let output_template = if is_file_path {
             output_path.to_string()
         } else {
@@ -222,16 +288,47 @@ impl VideoDownloader {
                 if let Some(entries) = playlist.entries {
                     if let Some(video) = entries.first() {
                         // Perform actual download for the first item
-                        let status = std::process::Command::new("yt-dlp")
-                            .arg(url)
+                        let mut cmd = Command::new("yt-dlp");
+                        cmd.arg(url)
                             .arg("-o")
                             .arg(&output_template)
                             .arg("--playlist-items")
                             .arg("1")
-                            .status()
-                            .map_err(|e| {
-                                DownloadError::IoError(format!("Failed to execute yt-dlp: {}", e))
-                            })?;
+                            .arg("--newline"); // Force newlines for progress parsing
+
+                        if overwrite {
+                            cmd.arg("--force-overwrite");
+                        }
+
+                        cmd.stdout(Stdio::piped());
+
+                        let mut child = cmd.spawn().map_err(|e| {
+                            DownloadError::IoError(format!("Failed to execute yt-dlp: {}", e))
+                        })?;
+
+                        if let Some(stdout) = child.stdout.take() {
+                            let reader = BufReader::new(stdout);
+                            for line in reader.lines() {
+                                if let Ok(line) = line {
+                                    // Print to terminal
+                                    println!("{}", line);
+
+                                    if line.starts_with("[download]") && line.contains("%") {
+                                        if let Some(pct_str) = line.split_whitespace().nth(1) {
+                                            if let Some(pct_val) =
+                                                pct_str.trim_end_matches('%').parse::<f32>().ok()
+                                            {
+                                                on_progress(pct_val / 100.0);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        let status = child.wait().map_err(|e| {
+                            DownloadError::IoError(format!("Failed to wait for yt-dlp: {}", e))
+                        })?;
 
                         if !status.success() {
                             return Err(DownloadError::DownloadFailed(

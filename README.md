@@ -20,9 +20,10 @@ The following platforms have been verified to work:
 - ✅ X (Twitter)
 - ✅ VK Video
 - ✅ Rutube
-- ⏳ TikTok (In Progress)
+- ✅ TikTok
+- ✅ Reddit
+- ✅ Dzen
 - ⏳ Instagram (In Progress)
-- ⏳ Reddit (In Progress)
 
 ## Technology Stack
 
