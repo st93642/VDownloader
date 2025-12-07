@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 13:36 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 18:22 st93642                                       */
+/*  Updated: Dec 07 2025 20:09 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -207,6 +207,8 @@ impl VideoDownloader {
             format!("{}/%%(title)s.%%(ext)s", output_path)
         };
 
+        info!("Using output template for validation: {}", output_template);
+
         let result = YoutubeDl::new(url)
             .socket_timeout("30")
             .extract_audio(false)
@@ -230,6 +232,21 @@ impl VideoDownloader {
                 info!("Metadata fetched: {}", video_title);
 
                 // Perform actual download
+                info!("Executing yt-dlp with output template: {}", output_template);
+                
+                // Get list of files before download to detect new file
+                let files_before: std::collections::HashSet<_> = if !is_file_path {
+                    std::fs::read_dir(output_path)
+                        .ok()
+                        .map(|entries| entries
+                            .filter_map(|e| e.ok())
+                            .filter_map(|e| e.file_name().into_string().ok())
+                            .collect())
+                        .unwrap_or_default()
+                } else {
+                    std::collections::HashSet::new()
+                };
+                
                 let mut cmd = Command::new("yt-dlp");
                 cmd.current_dir(working_dir);
                 cmd.arg(url)
@@ -276,11 +293,31 @@ impl VideoDownloader {
                 }
 
                 info!("Download completed: {}", video_title);
+                
+                // Detect the actual downloaded file by comparing directory contents
                 if is_file_path {
                     Ok(output_path.to_string())
                 } else {
-                    let ext = video.ext.clone().unwrap_or("mp4".to_string());
-                    Ok(format!("{}/{}.{}", output_path, video_title, ext))
+                    // Find newly created file
+                    let files_after: std::collections::HashSet<_> = std::fs::read_dir(output_path)
+                        .ok()
+                        .map(|entries| entries
+                            .filter_map(|e| e.ok())
+                            .filter_map(|e| e.file_name().into_string().ok())
+                            .collect())
+                        .unwrap_or_default();
+                    
+                    let new_files: Vec<_> = files_after.difference(&files_before).collect();
+                    
+                    if let Some(filename) = new_files.first() {
+                        let full_path = format!("{}/{}", output_path, filename);
+                        info!("Detected downloaded file: {}", full_path);
+                        Ok(full_path)
+                    } else {
+                        // Fallback to constructed path
+                        let ext = video.ext.clone().unwrap_or("mp4".to_string());
+                        Ok(format!("{}/{}.{}", output_path, video_title, ext))
+                    }
                 }
             }
             Err(e) => {
@@ -329,6 +366,8 @@ impl VideoDownloader {
             format!("{}/%%(title)s.%%(ext)s", output_path)
         };
 
+        info!("Using output template for playlist download: {}", output_template);
+
         match YoutubeDl::new(url)
             .socket_timeout("30")
             .extract_audio(false)
@@ -339,6 +378,19 @@ impl VideoDownloader {
             Ok(YoutubeDlOutput::Playlist(playlist)) => {
                 if let Some(entries) = playlist.entries {
                     if let Some(video) = entries.first() {
+                        // Get list of files before download
+                        let files_before: std::collections::HashSet<_> = if !is_file_path {
+                            std::fs::read_dir(output_path)
+                                .ok()
+                                .map(|entries| entries
+                                    .filter_map(|e| e.ok())
+                                    .filter_map(|e| e.file_name().into_string().ok())
+                                    .collect())
+                                .unwrap_or_default()
+                        } else {
+                            std::collections::HashSet::new()
+                        };
+                        
                         // Perform actual download for the first item
                         let mut cmd = Command::new("yt-dlp");
                         cmd.current_dir(working_dir);
@@ -387,12 +439,31 @@ impl VideoDownloader {
                             ));
                         }
 
+                        // Detect the actual downloaded file by comparing directory contents
                         if is_file_path {
                             Ok(output_path.to_string())
                         } else {
-                            let title = video.title.clone().unwrap_or("video".to_string());
-                            let ext = video.ext.clone().unwrap_or("mp4".to_string());
-                            Ok(format!("{}/{}.{}", output_path, title, ext))
+                            // Find newly created file
+                            let files_after: std::collections::HashSet<_> = std::fs::read_dir(output_path)
+                                .ok()
+                                .map(|entries| entries
+                                    .filter_map(|e| e.ok())
+                                    .filter_map(|e| e.file_name().into_string().ok())
+                                    .collect())
+                                .unwrap_or_default();
+                            
+                            let new_files: Vec<_> = files_after.difference(&files_before).collect();
+                            
+                            if let Some(filename) = new_files.first() {
+                                let full_path = format!("{}/{}", output_path, filename);
+                                info!("Detected downloaded file from playlist: {}", full_path);
+                                Ok(full_path)
+                            } else {
+                                // Fallback to constructed path
+                                let title = video.title.clone().unwrap_or("video".to_string());
+                                let ext = video.ext.clone().unwrap_or("mp4".to_string());
+                                Ok(format!("{}/{}.{}", output_path, title, ext))
+                            }
                         }
                     } else {
                         Err(DownloadError::DownloadFailed("Empty playlist".to_string()))

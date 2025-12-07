@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 20:30 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 19:21 st93642                                       */
+/*  Updated: Dec 07 2025 19:36 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -157,18 +157,30 @@ impl PreviewWindow {
         // Key: Use formats that return a SINGLE URL that can be played directly
         let formats = match platform {
             crate::core::downloader::Platform::Dzen => {
-                // Dzen needs simpler formats that don't require merging
+                // Dzen needs formats that provide single-stream URLs
                 vec![
-                    "worst",                          // Start with worst for faster loading
-                    "best[protocol^=http]",           // Best quality with direct http
-                    "(best[height<=480]/worst)[protocol^=http]", // Lower quality, more compatible
+                    "best[ext=mp4]",                  // Best MP4 (usually has muxed audio)
+                    "best",                           // Best any format
+                    "best[height<=720]",              // 720p or lower
+                    "worst",                          // Fallback to worst
+                ]
+            },
+            crate::core::downloader::Platform::Rutube => {
+                // Rutube typically has good format support
+                vec![
+                    "best[ext=mp4]",                  // Best MP4
+                    "best[height<=1080]",             // Up to 1080p
+                    "best",                           // Any best format
+                    "best[height<=720]",              // 720p fallback
                 ]
             },
             _ => {
+                // For other platforms (YouTube, etc.)
                 vec![
-                    "best[ext=mp4][protocol^=http]",  // MP4 with direct http
-                    "worst",                          // Worst quality (most compatible)
-                    "best[protocol^=http]",           // Any format with direct http
+                    "best[ext=mp4]",                  // Prefer MP4
+                    "best[height<=1080]",             // Up to 1080p
+                    "best",                           // Any format
+                    "worst",                          // Fallback
                 ]
             }
         };
@@ -200,9 +212,12 @@ impl PreviewWindow {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let lines: Vec<&str> = stdout.trim().lines().collect();
                 
+                debug!("yt-dlp returned {} line(s) for format '{}'", lines.len(), format);
+                
                 // Check if yt-dlp returned multiple URLs (video+audio that need merging)
                 if lines.len() > 1 {
                     warn!("Format '{}' returned {} URLs (requires merging, not supported)", format, lines.len());
+                    warn!("URLs: {:?}", lines);
                     last_error = format!("Format returned multiple streams that need merging");
                     continue;
                 }
@@ -215,10 +230,14 @@ impl PreviewWindow {
                     info!("Successfully extracted video URL with format: {}", format);
                     debug!("Video URL: {}", video_url);
                     return Ok(video_url);
+                } else {
+                    warn!("Empty URL returned for format '{}'", format);
+                    last_error = "Empty URL returned".to_string();
                 }
             } else {
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                warn!("Format '{}' failed: {}", format, stderr);
+                warn!("Format '{}' failed with exit code: {:?}", format, output.status.code());
+                warn!("Error output: {}", stderr);
                 last_error = stderr.to_string();
             }
         }
