@@ -13,9 +13,23 @@
 
 use crate::core::downloader::{DownloadRequest, VideoDownloader};
 use crate::core::error::DownloadError;
+use crate::core::search::SearchService;
+use crate::ui::components::search_view::SearchView;
 use gtk4::{
-    prelude::*, Application, ApplicationWindow, Box, Button, CheckButton, Entry, FileDialog, Label,
-    Orientation, ProgressBar,
+    prelude::*,
+    Application,
+    ApplicationWindow,
+    Box,
+    Button,
+    CheckButton,
+    Entry,
+    FileDialog,
+    Label,
+    Orientation,
+    ProgressBar,
+    Stack,
+    StackSwitcher,
+    StackTransitionType,
 };
 use log::info;
 use std::cell::RefCell;
@@ -29,28 +43,60 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
         .default_height(300)
         .build();
 
+    let search_service = SearchService::new(10);
+
     let main_box = Box::new(Orientation::Vertical, 12);
     main_box.set_margin_top(24);
     main_box.set_margin_bottom(24);
     main_box.set_margin_start(24);
     main_box.set_margin_end(24);
 
-    // Header
+    let content_stack = Stack::builder()
+        .hexpand(true)
+        .vexpand(true)
+        .transition_type(StackTransitionType::SlideLeftRight)
+        .build();
+
+    let stack_switcher = StackSwitcher::builder()
+        .halign(gtk4::Align::End)
+        .margin_top(6)
+        .build();
+    stack_switcher.set_stack(Some(&content_stack));
+    stack_switcher.set_tooltip_text(Some("Switch between Download and Search"));
+
     let header = Label::new(Some("VDownloader"));
     header.add_css_class("title-1");
 
-    let subtitle = Label::new(Some("Download videos from multiple platforms"));
+    let subtitle = Label::new(Some("Search for videos or paste a link to download"));
     subtitle.add_css_class("dim-label");
 
+    let title_box = Box::new(Orientation::Vertical, 4);
+    title_box.set_hexpand(true);
+    title_box.append(&header);
+    title_box.append(&subtitle);
+
+    let header_row = Box::new(Orientation::Horizontal, 12);
+    header_row.set_hexpand(true);
+    header_row.append(&title_box);
+    header_row.append(&stack_switcher);
+
+    main_box.append(&header_row);
+
+    let download_page = Box::new(Orientation::Vertical, 12);
+    download_page.set_margin_top(12);
+    download_page.set_margin_bottom(12);
+    download_page.set_margin_start(12);
+    download_page.set_margin_end(12);
+
     // URL input section
-    let url_label = Label::new(Some("Video URL:"));
+    let url_label = Label::new(Some("Video URL (auto-filled from Search):"));
     url_label.set_halign(gtk4::Align::Start);
     url_label.set_margin_top(12);
 
     let url_box = Box::new(Orientation::Horizontal, 12);
 
     let url_entry = Entry::builder()
-        .placeholder_text("Enter video URL here...")
+        .placeholder_text("Enter a video URL or choose one from Search...")
         .hexpand(true)
         .build();
 
@@ -131,19 +177,6 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     dir_box.append(&path_label);
     dir_box.append(&browse_button);
 
-    // Progress bar
-    let progress_bar = ProgressBar::builder()
-        .margin_top(12)
-        .show_text(true)
-        .build();
-    progress_bar.set_visible(false);
-
-    // Status label
-    let status_label = Label::new(Some("Ready to download"));
-    status_label.set_halign(gtk4::Align::Start);
-    status_label.set_margin_top(12);
-    status_label.add_css_class("dim-label");
-
     // Overwrite checkbox
     let overwrite_check = CheckButton::with_label("Overwrite existing files");
     overwrite_check.set_margin_top(12);
@@ -152,6 +185,19 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     let download_button = Button::with_label("Download");
     download_button.add_css_class("suggested-action");
     download_button.set_margin_top(12);
+
+    // Progress bar
+    let progress_bar = ProgressBar::builder()
+        .margin_top(12)
+        .show_text(true)
+        .build();
+    progress_bar.set_visible(false);
+
+    // Status label
+    let status_label = Label::new(Some("Ready to download or use the Search tab"));
+    status_label.set_halign(gtk4::Align::Start);
+    status_label.set_margin_top(12);
+    status_label.add_css_class("dim-label");
 
     let url_entry_clone = url_entry.clone();
     let selected_path_clone = selected_path.clone();
@@ -167,7 +213,10 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
         if url.is_empty() {
             status_label_clone.set_label("Error: Please enter a video URL");
             status_label_clone.remove_css_class("dim-label");
+            status_label_clone.remove_css_class("success");
+            status_label_clone.remove_css_class("warning");
             status_label_clone.add_css_class("error");
+            progress_bar_clone.set_visible(false);
             return;
         }
 
@@ -175,13 +224,18 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
             status_label_clone
                 .set_label("Error: Invalid URL (must start with http:// or https://)");
             status_label_clone.remove_css_class("dim-label");
+            status_label_clone.remove_css_class("success");
+            status_label_clone.remove_css_class("warning");
             status_label_clone.add_css_class("error");
+            progress_bar_clone.set_visible(false);
             return;
         }
 
         info!("Download requested for URL: {} to path: {}", url, path);
 
         status_label_clone.remove_css_class("error");
+        status_label_clone.remove_css_class("success");
+        status_label_clone.remove_css_class("warning");
         status_label_clone.add_css_class("dim-label");
         status_label_clone.set_label("Validating and starting download...");
 
@@ -203,7 +257,8 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
             match receiver.try_recv() {
                 Ok(progress) => {
                     progress_bar_clone_updater.set_fraction(progress as f64);
-                    progress_bar_clone_updater.set_text(Some(&format!("{:.0}%", progress * 100.0)));
+                    progress_bar_clone_updater
+                        .set_text(Some(&format!("{:.0}%", progress * 100.0)));
                 }
                 Err(std::sync::mpsc::TryRecvError::Empty) => {
                     return gtk4::glib::ControlFlow::Continue
@@ -235,6 +290,8 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
                 Ok(file_path) => {
                     info!("Download successful: {}", file_path);
                     status_label_clone2.remove_css_class("dim-label");
+                    status_label_clone2.remove_css_class("error");
+                    status_label_clone2.remove_css_class("warning");
                     status_label_clone2.add_css_class("success");
                     status_label_clone2
                         .set_label("Download completed! File saved to download directory");
@@ -251,6 +308,8 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
                     let error_msg = format_error(&e);
                     info!("Download failed: {}", error_msg);
                     status_label_clone2.remove_css_class("dim-label");
+                    status_label_clone2.remove_css_class("success");
+                    status_label_clone2.remove_css_class("warning");
                     status_label_clone2.add_css_class("error");
                     status_label_clone2.set_label(&error_msg);
                     progress_bar_clone3.set_visible(false);
@@ -261,21 +320,43 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
         });
     });
 
-    // Assemble the UI
-    main_box.append(&header);
-    main_box.append(&subtitle);
-    main_box.append(&url_label);
-    main_box.append(&url_box);
-    main_box.append(&dir_label);
-    main_box.append(&dir_box);
-    main_box.append(&overwrite_check);
-    main_box.append(&download_button);
-    main_box.append(&progress_bar);
-    main_box.append(&status_label);
+    download_page.append(&url_label);
+    download_page.append(&url_box);
+    download_page.append(&dir_label);
+    download_page.append(&dir_box);
+    download_page.append(&overwrite_check);
+    download_page.append(&download_button);
+    download_page.append(&progress_bar);
+    download_page.append(&status_label);
 
-    // Add queue placeholder
+    // Add queue placeholder specific to download workflow
     let queue_placeholder = crate::ui::components::download_queue::create_queue_placeholder();
-    main_box.append(&queue_placeholder);
+    download_page.append(&queue_placeholder);
+
+    content_stack.add_titled(&download_page, Some("download"), "Download");
+
+    let search_view = SearchView::new_with_service(search_service);
+    search_view.container.set_hexpand(true);
+    search_view.container.set_vexpand(true);
+    content_stack.add_titled(&search_view.container, Some("search"), "Search");
+
+    let url_entry_from_search = url_entry.clone();
+    let download_button_from_search = download_button.clone();
+    let status_label_from_search = status_label.clone();
+    let stack_for_search = content_stack.clone();
+
+    search_view.set_download_callback(move |result| {
+        url_entry_from_search.set_text(&result.url);
+        stack_for_search.set_visible_child_name("download");
+        status_label_from_search.remove_css_class("error");
+        status_label_from_search.remove_css_class("success");
+        status_label_from_search.remove_css_class("warning");
+        status_label_from_search.add_css_class("dim-label");
+        status_label_from_search.set_label("Validating and starting download...");
+        download_button_from_search.emit_clicked();
+    });
+
+    main_box.append(&content_stack);
 
     window.set_child(Some(&main_box));
 

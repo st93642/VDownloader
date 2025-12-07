@@ -41,6 +41,10 @@ pub struct SearchView {
 
 impl SearchView {
     pub fn new() -> Self {
+        Self::new_with_service(SearchService::new(10))
+    }
+
+    pub fn new_with_service(search_service: SearchService) -> Self {
         let container = gtk4::Box::new(Orientation::Vertical, 12);
         container.set_margin_top(12);
         container.set_margin_bottom(12);
@@ -87,7 +91,6 @@ impl SearchView {
         container.append(&status_label);
         container.append(&scrolled_window);
 
-        let search_service = SearchService::new(10);
         let thumbnail_cache = Rc::new(RefCell::new(HashMap::new()));
         let download_callback = Rc::new(RefCell::new(None));
 
