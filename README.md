@@ -123,6 +123,12 @@ VDownloader/
 └── docs/                   # Additional documentation
 ```
 
+## Releases
+
+Pre-built binaries for Linux, Windows, and macOS are available on the [Releases](https://github.com/st93642/VDownloader/releases) page.
+
+For information on creating releases, see [RELEASE.md](RELEASE.md).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
