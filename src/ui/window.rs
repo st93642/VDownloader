@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 13:37 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 18:07 st93642                                       */
+/*  Updated: Dec 07 2025 19:05 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -338,6 +338,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     let search_view = SearchView::new_with_service(search_service);
     search_view.container.set_hexpand(true);
     search_view.container.set_vexpand(true);
+    search_view.set_window(window.clone());
     content_stack.add_titled(&search_view.container, Some("search"), "Search");
 
     let url_entry_from_search = url_entry.clone();

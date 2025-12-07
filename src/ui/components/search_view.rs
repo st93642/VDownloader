@@ -5,16 +5,18 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 19:00 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 18:07 st93642                                       */
+/*  Updated: Dec 07 2025 19:10 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
 /*****************************************************************************/
 
 use crate::core::search::{SearchError, SearchResult, SearchService};
+use crate::ui::components::preview_window::PreviewWindow;
 use gdk_pixbuf::{Pixbuf, PixbufLoader};
 use gtk4::{
-    prelude::*, Button, Image, Label, ListBox, Orientation, ScrolledWindow, SearchEntry, Spinner,
+    prelude::*, ApplicationWindow, Button, Image, Label, ListBox, Orientation, ScrolledWindow,
+    SearchEntry, Spinner,
 };
 use log::{debug, warn};
 use std::cell::RefCell;
@@ -37,6 +39,7 @@ pub struct SearchView {
     results_list: ListBox,
     thumbnail_cache: Rc<RefCell<ThumbnailCache>>,
     download_callback: Rc<RefCell<Option<DownloadCallback>>>,
+    window: Rc<RefCell<Option<ApplicationWindow>>>,
 }
 
 impl SearchView {
@@ -94,6 +97,7 @@ impl SearchView {
 
         let thumbnail_cache = Rc::new(RefCell::new(HashMap::new()));
         let download_callback = Rc::new(RefCell::new(None));
+        let window = Rc::new(RefCell::new(None));
 
         let mut view = Self {
             container,
@@ -105,6 +109,7 @@ impl SearchView {
             results_list: results_list.clone(),
             thumbnail_cache: thumbnail_cache.clone(),
             download_callback: download_callback.clone(),
+            window: window.clone(),
         };
 
         view.connect_search_signals();
@@ -118,6 +123,10 @@ impl SearchView {
         *self.download_callback.borrow_mut() = Some(std::boxed::Box::new(callback));
     }
 
+    pub fn set_window(&self, window: ApplicationWindow) {
+        *self.window.borrow_mut() = Some(window);
+    }
+
     fn connect_search_signals(&mut self) {
         let search_entry = self.search_entry.clone();
         let search_button = self.search_button.clone();
@@ -127,6 +136,7 @@ impl SearchView {
         let search_service = self.search_service;
         let thumbnail_cache = self.thumbnail_cache.clone();
         let download_callback = self.download_callback.clone();
+        let window = self.window.clone();
 
         let perform_search = Rc::new(move || {
             let query = search_entry.text();
@@ -158,6 +168,7 @@ impl SearchView {
             let search_service_clone = search_service;
             let thumbnail_cache_clone = thumbnail_cache.clone();
             let download_callback_clone = download_callback.clone();
+            let window_clone = window.clone();
             let query_clone = query.to_string();
 
             gtk4::glib::spawn_future_local(async move {
@@ -179,8 +190,11 @@ impl SearchView {
                             status_label_clone.add_css_class("dim-label");
 
                             for result in results {
-                                let card =
-                                    Self::create_result_card(&result, &download_callback_clone);
+                                let card = Self::create_result_card(
+                                    &result,
+                                    &download_callback_clone,
+                                    &window_clone,
+                                );
                                 results_list_clone.append(&card);
 
                                 if let Some(ref thumbnail_url) = result.thumbnail {
@@ -221,6 +235,7 @@ impl SearchView {
     fn create_result_card(
         result: &SearchResult,
         download_callback: &Rc<RefCell<Option<DownloadCallback>>>,
+        window: &Rc<RefCell<Option<ApplicationWindow>>>,
     ) -> gtk4::Box {
         let card = gtk4::Box::new(Orientation::Horizontal, 12);
         card.set_margin_top(6);
@@ -280,8 +295,26 @@ impl SearchView {
 
         card.append(&info_box);
 
+        // Button box for Preview and Download
+        let button_box = gtk4::Box::new(Orientation::Vertical, 6);
+        button_box.set_valign(gtk4::Align::Center);
+
+        // Preview button
+        let preview_button = Button::with_label("Preview");
+        
+        let result_clone_preview = result.clone();
+        let window_clone = window.clone();
+        preview_button.connect_clicked(move |_| {
+            if let Some(ref parent_window) = *window_clone.borrow() {
+                let preview = PreviewWindow::new(parent_window, &result_clone_preview);
+                preview.present();
+            }
+        });
+
+        button_box.append(&preview_button);
+
+        // Download button
         let download_button = Button::with_label("Download");
-        download_button.set_valign(gtk4::Align::Center);
         download_button.add_css_class("suggested-action");
 
         let result_clone = result.clone();
@@ -292,7 +325,8 @@ impl SearchView {
             }
         });
 
-        card.append(&download_button);
+        button_box.append(&download_button);
+        card.append(&button_box);
 
         card
     }

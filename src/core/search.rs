@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 16:17 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 18:40 st93642                                       */
+/*  Updated: Dec 07 2025 18:58 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -67,6 +67,7 @@ impl SearchService {
         Self { default_limit }
     }
 
+    #[allow(dead_code)]
     pub fn default_limit(&self) -> u32 {
         self.default_limit
     }
