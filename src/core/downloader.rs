@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 13:36 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 20:09 st93642                                       */
+/*  Updated: Dec 07 2025 22:55 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -209,10 +209,17 @@ impl VideoDownloader {
 
         info!("Using output template for validation: {}", output_template);
 
+        // The youtube_dl crate needs the template without %% escaping
+        let crate_template = if is_file_path {
+            output_path.to_string()
+        } else {
+            format!("{}/%(title)s.%(ext)s", output_path)
+        };
+
         let result = YoutubeDl::new(url)
             .socket_timeout("30")
             .extract_audio(false)
-            .output_template(&output_template)
+            .output_template(&crate_template)
             .extra_arg("--simulate")
             .run();
 
@@ -249,9 +256,19 @@ impl VideoDownloader {
                 
                 let mut cmd = Command::new("yt-dlp");
                 cmd.current_dir(working_dir);
+                
+                // For Command::arg(), we don't need %% escaping since it doesn't go through shell
+                let cmd_template = if is_file_path {
+                    output_path.to_string()
+                } else {
+                    format!("{}/%(title)s.%(ext)s", output_path)
+                };
+                
+                info!("Passing to yt-dlp command: {}", cmd_template);
+                
                 cmd.arg(url)
                     .arg("-o")
-                    .arg(&output_template)
+                    .arg(&cmd_template)
                     .arg("--newline"); // Force newlines for progress parsing
 
                 if overwrite {
@@ -368,10 +385,17 @@ impl VideoDownloader {
 
         info!("Using output template for playlist download: {}", output_template);
 
+        // The youtube_dl crate needs the template without %% escaping
+        let crate_template = if is_file_path {
+            output_path.to_string()
+        } else {
+            format!("{}/%(title)s.%(ext)s", output_path)
+        };
+
         match YoutubeDl::new(url)
             .socket_timeout("30")
             .extract_audio(false)
-            .output_template(&output_template)
+            .output_template(&crate_template)
             .playlist_items(1u32)
             .run()
         {
@@ -394,9 +418,19 @@ impl VideoDownloader {
                         // Perform actual download for the first item
                         let mut cmd = Command::new("yt-dlp");
                         cmd.current_dir(working_dir);
+                        
+                        // For Command::arg(), we don't need %% escaping since it doesn't go through shell
+                        let cmd_template = if is_file_path {
+                            output_path.to_string()
+                        } else {
+                            format!("{}/%(title)s.%(ext)s", output_path)
+                        };
+                        
+                        info!("Passing to yt-dlp command (playlist): {}", cmd_template);
+                        
                         cmd.arg(url)
                             .arg("-o")
-                            .arg(&output_template)
+                            .arg(&cmd_template)
                             .arg("--playlist-items")
                             .arg("1")
                             .arg("--newline"); // Force newlines for progress parsing
