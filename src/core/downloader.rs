@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 13:36 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 13:48 st93642                                       */
+/*  Updated: Dec 07 2025 15:55 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -226,20 +226,18 @@ impl VideoDownloader {
 
                 if let Some(stdout) = child.stdout.take() {
                     let reader = BufReader::new(stdout);
-                    for line in reader.lines() {
-                        if let Ok(line) = line {
-                            // Print to terminal so user sees progress there too
-                            println!("{}", line);
-                            
-                            // Parse progress
-                            // [download]  45.0% of 10.00MiB at 2.00MiB/s ETA 00:05
-                            if line.starts_with("[download]") && line.contains("%") {
-                                if let Some(pct_str) = line.split_whitespace().nth(1) {
-                                    if let Some(pct_val) =
-                                        pct_str.trim_end_matches('%').parse::<f32>().ok()
-                                    {
-                                        on_progress(pct_val / 100.0);
-                                    }
+                    for line in reader.lines().map_while(std::result::Result::ok) {
+                        // Print to terminal so user sees progress there too
+                        println!("{}", line);
+                        
+                        // Parse progress
+                        // [download]  45.0% of 10.00MiB at 2.00MiB/s ETA 00:05
+                        if line.starts_with("[download]") && line.contains("%") {
+                            if let Some(pct_str) = line.split_whitespace().nth(1) {
+                                if let Ok(pct_val) =
+                                    pct_str.trim_end_matches('%').parse::<f32>()
+                                {
+                                    on_progress(pct_val / 100.0);
                                 }
                             }
                         }
@@ -337,18 +335,16 @@ impl VideoDownloader {
 
                         if let Some(stdout) = child.stdout.take() {
                             let reader = BufReader::new(stdout);
-                            for line in reader.lines() {
-                                if let Ok(line) = line {
-                                    // Print to terminal
-                                    println!("{}", line);
+                            for line in reader.lines().map_while(std::result::Result::ok) {
+                                // Print to terminal
+                                println!("{}", line);
 
-                                    if line.starts_with("[download]") && line.contains("%") {
-                                        if let Some(pct_str) = line.split_whitespace().nth(1) {
-                                            if let Some(pct_val) =
-                                                pct_str.trim_end_matches('%').parse::<f32>().ok()
-                                            {
-                                                on_progress(pct_val / 100.0);
-                                            }
+                                if line.starts_with("[download]") && line.contains("%") {
+                                    if let Some(pct_str) = line.split_whitespace().nth(1) {
+                                        if let Ok(pct_val) =
+                                            pct_str.trim_end_matches('%').parse::<f32>()
+                                        {
+                                            on_progress(pct_val / 100.0);
                                         }
                                     }
                                 }
