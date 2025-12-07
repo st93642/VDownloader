@@ -40,7 +40,7 @@ VERSION=$1
 TAG="v${VERSION}"
 
 # Validate version format (semantic versioning)
-if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.]+)?$ ]]; then
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\-]+(\.[a-zA-Z0-9\-]+)*)?$ ]]; then
     echo -e "${RED}Error: Invalid version format${NC}"
     echo -e "Version must follow semantic versioning (e.g., 0.1.0, 1.0.0, 1.0.0-beta.1)"
     exit 1

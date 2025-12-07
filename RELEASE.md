@@ -204,7 +204,8 @@ Each release includes the following artifacts:
 | Linux | `vdownloader-linux` | Native Linux binary (requires GTK4) |
 | Windows | `vdownloader-windows.exe` | Windows executable (requires GTK4 runtime) |
 | macOS | `vdownloader-macos` | Native macOS binary (requires GTK4) |
-| macOS | `VDownloader.app.zip` | macOS application bundle (optional) |
+
+**Note:** The macOS application bundle (`VDownloader.app`) is built but not currently included in GitHub releases. Users should use the `vdownloader-macos` binary instead.
 
 ## Runtime Dependencies
 
