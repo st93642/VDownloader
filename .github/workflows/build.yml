@@ -93,6 +93,7 @@ jobs:
       run: |
         export PKG_CONFIG_PATH="/ucrt64/lib/pkgconfig"
         export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
+        export LIB="D:\\a\\_temp\\msys64\\ucrt64\\lib;$LIB"
         cargo build --release
         mkdir -p dist
         cp target/release/vdownloader.exe dist/vdownloader-windows.exe
