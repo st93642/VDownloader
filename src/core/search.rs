@@ -14,8 +14,8 @@
 use crate::core::downloader::{Platform, VideoDownloader};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::io::{BufRead, BufReader};
 use std::io::Cursor;
+use std::io::{BufRead, BufReader};
 use thiserror::Error;
 use tokio::process::Command;
 
@@ -52,6 +52,7 @@ pub struct SearchResult {
     pub platform: Platform,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct SearchService {
     default_limit: u32,
 }
@@ -59,7 +60,10 @@ pub struct SearchService {
 impl SearchService {
     pub fn new(default_limit: u32) -> Self {
         let default_limit = default_limit.max(1);
-        info!("Creating SearchService with default limit: {}", default_limit);
+        info!(
+            "Creating SearchService with default limit: {}",
+            default_limit
+        );
         Self { default_limit }
     }
 
@@ -79,7 +83,9 @@ impl SearchService {
             ));
         }
 
-        let limit = limit.filter(|value| *value > 0).unwrap_or(self.default_limit);
+        let limit = limit
+            .filter(|value| *value > 0)
+            .unwrap_or(self.default_limit);
         let search_expr = format!("ytsearch{}:{}", limit, trimmed);
 
         debug!("Executing search with query expression: {}", search_expr);
@@ -225,9 +231,7 @@ impl TryFrom<RawSearchEntry> for SearchResult {
             .unwrap_or_else(|| format!("https://www.youtube.com/watch?v={}", id));
 
         let resolved_thumbnail = thumbnail.or_else(|| {
-            thumbnails.and_then(|collection| {
-                collection.into_iter().find_map(|thumb| thumb.url)
-            })
+            thumbnails.and_then(|collection| collection.into_iter().find_map(|thumb| thumb.url))
         });
 
         let uploader = uploader.or(channel);
@@ -303,10 +307,7 @@ mod tests {
         let first = &results[0];
         assert_eq!(first.id, "dQw4w9WgXcQ");
         assert_eq!(first.title, "Rick Astley - Never Gonna Give You Up");
-        assert_eq!(
-            first.url,
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        );
+        assert_eq!(first.url, "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
         assert_eq!(first.duration, Some(213));
         assert_eq!(first.uploader, Some("Rick Astley".to_string()));
         assert_eq!(first.view_count, Some(1_000_000));
@@ -355,7 +356,8 @@ mod tests {
 
     #[test]
     fn test_parse_missing_required_field() {
-        let json_line = r#"{"title":"Missing ID Video","url":"https://www.youtube.com/watch?v=test"}"#;
+        let json_line =
+            r#"{"title":"Missing ID Video","url":"https://www.youtube.com/watch?v=test"}"#;
 
         let results = parse_search_results(json_line.as_bytes()).unwrap();
         assert_eq!(results.len(), 0);
@@ -413,17 +415,14 @@ INVALID JSON LINE
 
     #[test]
     fn test_detect_platform_from_url_fallback() {
-        let platform = detect_platform_from_metadata(None, None, "https://twitter.com/user/status/123");
+        let platform =
+            detect_platform_from_metadata(None, None, "https://twitter.com/user/status/123");
         assert!(matches!(platform, Platform::Twitter));
     }
 
     #[test]
     fn test_detect_platform_vk() {
-        let platform = detect_platform_from_metadata(
-            Some("vk"),
-            None,
-            "https://vk.com/video123",
-        );
+        let platform = detect_platform_from_metadata(Some("vk"), None, "https://vk.com/video123");
         assert!(matches!(platform, Platform::Vk));
     }
 

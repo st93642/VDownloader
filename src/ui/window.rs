@@ -199,15 +199,17 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
         let (sender, receiver) = std::sync::mpsc::channel();
 
         let progress_bar_clone_updater = progress_bar_clone.clone();
-        gtk4::glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
-            loop {
-                match receiver.try_recv() {
-                    Ok(progress) => {
-                        progress_bar_clone_updater.set_fraction(progress as f64);
-                        progress_bar_clone_updater.set_text(Some(&format!("{:.0}%", progress * 100.0)));
-                    }
-                    Err(std::sync::mpsc::TryRecvError::Empty) => return gtk4::glib::ControlFlow::Continue,
-                    Err(std::sync::mpsc::TryRecvError::Disconnected) => return gtk4::glib::ControlFlow::Break,
+        gtk4::glib::timeout_add_local(std::time::Duration::from_millis(50), move || loop {
+            match receiver.try_recv() {
+                Ok(progress) => {
+                    progress_bar_clone_updater.set_fraction(progress as f64);
+                    progress_bar_clone_updater.set_text(Some(&format!("{:.0}%", progress * 100.0)));
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => {
+                    return gtk4::glib::ControlFlow::Continue
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    return gtk4::glib::ControlFlow::Break
                 }
             }
         });
@@ -224,9 +226,12 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
                 overwrite,
             };
 
-            match downloader.download(request, move |p| {
-                let _ = sender.send(p);
-            }).await {
+            match downloader
+                .download(request, move |p| {
+                    let _ = sender.send(p);
+                })
+                .await
+            {
                 Ok(file_path) => {
                     info!("Download successful: {}", file_path);
                     status_label_clone2.remove_css_class("dim-label");
