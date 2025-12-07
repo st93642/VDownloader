@@ -53,6 +53,9 @@ Located in `src/core/downloader.rs`, it currently covers:
 - `Twitter`
 - `Instagram`
 - `Reddit`
+- `Vk`
+- `Rutube`
+- `Dzen`
 - `Other` (fallback)
 
 `VideoDownloader::detect_platform(&str)` performs straightforward substring checks on the URL to choose a variant. The selected platform is stored in `DownloadRequest` and can be used for telemetry or future provider-specific features, but today it primarily tags requests for potential queue presentation.

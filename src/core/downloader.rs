@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 13:36 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 15:55 st93642                                       */
+/*  Updated: Dec 07 2025 16:03 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -27,6 +27,9 @@ pub enum Platform {
     Twitter,
     Instagram,
     Reddit,
+    Vk,
+    Rutube,
+    Dzen,
     Other,
 }
 
@@ -74,6 +77,12 @@ impl VideoDownloader {
             Platform::Instagram
         } else if url.contains("reddit.com") {
             Platform::Reddit
+        } else if url.contains("vk.com") || url.contains("vkvideo.ru") {
+            Platform::Vk
+        } else if url.contains("rutube.ru") {
+            Platform::Rutube
+        } else if url.contains("dzen.ru") {
+            Platform::Dzen
         } else {
             Platform::Other
         }

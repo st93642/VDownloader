@@ -84,9 +84,12 @@ No build scripts or additional binaries exist; `cargo` drives the entire toolcha
 | `Twitter` | URL contains `twitter.com` or `x.com` |
 | `Instagram` | URL contains `instagram.com` |
 | `Reddit` | URL contains `reddit.com` |
+| `Vk` | URL contains `vk.com` or `vkvideo.ru` |
+| `Rutube` | URL contains `rutube.ru` |
+| `Dzen` | URL contains `dzen.ru` |
 | `Other` | Fallback |
 
-Despite README claims, there are **no** enum variants or special handling for VK Video, Rutube, or Dzen yet. Adding new platforms requires extending the enum, detector, and any UI display logic.
+The `Platform` enum and detection logic cover all platforms listed in the README. Adding new platforms requires extending the enum and detector.
 
 ---
 
