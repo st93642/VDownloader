@@ -14,3 +14,4 @@
 pub mod downloader;
 pub mod error;
 pub mod queue;
+pub mod search;
