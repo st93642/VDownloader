@@ -5,6 +5,7 @@ This directory contains the Windows executable built by GitHub Actions.
 - `vdownloader-windows.exe` - Automatically built and updated on every push to master
 
 The executable is built with:
+
 - Rust stable toolchain
 - MSYS2 UCRT64 environment
 - GTK4 and all required dependencies
