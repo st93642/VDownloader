@@ -5,7 +5,7 @@
 #  By: st93642@students.tsi.lv                               TT    SSSSSSS II #
 #                                                            TT         SS II #
 #  Created: Dec 07 2025 13:37 st93642                        TT    SSSSSSS II #
-#  Updated: Dec 07 2025 13:37 st93642                                         #
+#  Updated: Dec 07 2025 18:40 st93642                                         #
 #                                                                             #
 #   Transport and Telecommunication Institute - Riga, Latvia                  #
 #                       https://tsi.lv                                        #
@@ -30,8 +30,9 @@ gdk-pixbuf = "0.20"
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
 
-# HTTP client for thumbnail loading
+# HTTP client for thumbnail loading and API requests
 reqwest = { version = "0.11", features = ["rustls-tls"], default-features = false }
+urlencoding = "2.1"
 
 # Video extraction
 youtube_dl = "0.9"

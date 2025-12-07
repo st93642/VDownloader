@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 19:00 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 19:00 st93642                                       */
+/*  Updated: Dec 07 2025 18:07 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -71,6 +71,7 @@ impl SearchView {
         status_label.set_halign(gtk4::Align::Start);
         status_label.set_margin_top(6);
         status_label.add_css_class("dim-label");
+        status_label.set_selectable(true);
 
         let scrolled_window = ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)

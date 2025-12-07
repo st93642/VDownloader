@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 13:37 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 13:48 st93642                                       */
+/*  Updated: Dec 07 2025 18:07 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -125,13 +125,13 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
         let _ = std::fs::create_dir_all(&videos_path);
     }
 
-    let default_file = if videos_path.exists() {
-        videos_path.join("video.mp4").to_string_lossy().to_string()
+    let default_path = if videos_path.exists() {
+        videos_path.to_string_lossy().to_string()
     } else {
-        format!("{}/video.mp4", home_dir)
+        home_dir
     };
 
-    let selected_path = Rc::new(RefCell::new(default_file));
+    let selected_path = Rc::new(RefCell::new(default_path));
 
     let path_label = Label::new(Some(&*selected_path.borrow()));
     path_label.set_halign(gtk4::Align::Start);
@@ -139,7 +139,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     path_label.set_ellipsize(gtk4::pango::EllipsizeMode::Middle);
     path_label.add_css_class("monospace");
 
-    let browse_button = Button::with_label("Save As...");
+    let browse_button = Button::with_label("Browse Folder...");
 
     let window_clone = window.clone();
     let path_label_clone = path_label.clone();
@@ -149,8 +149,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     browse_button.connect_clicked(move |_| {
         let initial_folder = gtk4::gio::File::for_path(&videos_path_clone);
         let dialog = FileDialog::builder()
-            .title("Save Video As")
-            .initial_name("video.mp4")
+            .title("Select Download Folder")
             .initial_folder(&initial_folder)
             .modal(true)
             .build();
@@ -158,7 +157,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
         let path_label_clone2 = path_label_clone.clone();
         let selected_path_clone2 = selected_path_clone.clone();
 
-        dialog.save(
+        dialog.select_folder(
             Some(&window_clone),
             None::<&gtk4::gio::Cancellable>,
             move |result| {
@@ -198,6 +197,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     status_label.set_halign(gtk4::Align::Start);
     status_label.set_margin_top(12);
     status_label.add_css_class("dim-label");
+    status_label.set_selectable(true);
 
     let url_entry_clone = url_entry.clone();
     let selected_path_clone = selected_path.clone();

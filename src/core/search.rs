@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 16:17 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 17:02 st93642                                       */
+/*  Updated: Dec 07 2025 18:40 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -86,25 +86,115 @@ impl SearchService {
         let limit = limit
             .filter(|value| *value > 0)
             .unwrap_or(self.default_limit);
-        let search_expr = format!("ytsearch{}:{}", limit, trimmed);
 
-        debug!("Executing search with query expression: {}", search_expr);
+        // Heuristic to determine if the query is a URL or a search term
+        let is_url_like = !trimmed.contains(char::is_whitespace) && trimmed.contains('.');
+        let candidate_url = if is_url_like && !trimmed.starts_with("http") {
+            format!("https://{}", trimmed)
+        } else {
+            trimmed.to_string()
+        };
 
-        let output = Command::new("yt-dlp")
-            .arg(&search_expr)
-            .args(["--dump-json", "--flat-playlist", "--skip-download"])
-            .output()
+        if VideoDownloader::validate_url(&candidate_url).is_ok() {
+            debug!("Executing search with URL: {}", candidate_url);
+            return Self::execute_search_command(
+                &candidate_url,
+                &["--dump-json", "--flat-playlist", "--skip-download"],
+                Some(limit),
+            )
+            .await;
+        }
+
+        // It's a keyword search - aggregate results from supported platforms
+        debug!("Executing multi-platform search for: {}", trimmed);
+        let mut tasks = Vec::new();
+
+        // 1. YouTube Search
+        let yt_expr = format!("ytsearch{}:{}", limit, trimmed);
+        tasks.push(tokio::spawn(async move {
+            Self::execute_search_command(
+                &yt_expr,
+                &["--dump-json", "--flat-playlist", "--skip-download"],
+                None, // Limit is embedded in ytsearch prefix
+            )
             .await
-            .map_err(map_spawn_error)?;
+        }));
+
+        // 2. Dzen Search
+        let dzen_url = format!("https://dzen.ru/search?query={}", trimmed);
+        let dzen_limit = limit;
+        tasks.push(tokio::spawn(async move {
+            Self::execute_search_command(
+                &dzen_url,
+                &["--dump-json", "--flat-playlist", "--skip-download"],
+                Some(dzen_limit),
+            )
+            .await
+        }));
+
+        // 3. Rutube Search (using public API)
+        let rutube_query = trimmed.to_string();
+        let rutube_limit = limit;
+        tasks.push(tokio::spawn(async move {
+            Self::search_rutube(&rutube_query, rutube_limit).await
+        }));
+
+        // Note: VK does not support search without authentication.
+        // VK API requires access tokens which is beyond scope for a simple downloader.
+
+        let mut aggregated_results = Vec::new();
+        let mut errors = Vec::new();
+
+        for task in tasks {
+            match task.await {
+                Ok(Ok(results)) => aggregated_results.extend(results),
+                Ok(Err(e)) => errors.push(e),
+                Err(e) => errors.push(SearchError::CommandFailed(format!("Task join error: {}", e))),
+            }
+        }
+
+        // Filter out Dzen article URLs (/a/) as they trigger a broken extractor
+        aggregated_results.retain(|result| {
+            if result.platform == Platform::Dzen && result.url.contains("/a/") {
+                debug!("Filtering out Dzen article URL (unsupported): {}", result.url);
+                false
+            } else {
+                true
+            }
+        });
+
+        if aggregated_results.is_empty() && !errors.is_empty() {
+            // If we got no results and only errors, return the first error
+            return Err(errors.remove(0));
+        }
+
+        Ok(aggregated_results)
+    }
+
+    async fn execute_search_command(
+        input: &str,
+        args: &[&str],
+        limit: Option<u32>,
+    ) -> Result<Vec<SearchResult>, SearchError> {
+        let mut cmd = Command::new("yt-dlp");
+        cmd.arg(input).args(args);
+
+        if let Some(l) = limit {
+            cmd.arg("--playlist-items").arg(format!("1-{}", l));
+        }
+
+        let output = cmd.output().await.map_err(map_spawn_error)?;
 
         if !output.status.success() {
             let stderr_text = String::from_utf8_lossy(&output.stderr).to_string();
-            error!(
-                "yt-dlp exited with {:?}; stderr: {}",
-                output.status.code(),
-                stderr_text
-            );
-
+            // Don't log error for "Unsupported URL" as it might just mean the platform isn't supported for search
+            if !stderr_text.contains("Unsupported URL") {
+                error!(
+                    "yt-dlp exited with {:?}; stderr: {}",
+                    output.status.code(),
+                    stderr_text
+                );
+            }
             return Err(interpret_command_failure(
                 &stderr_text,
                 output.status.code(),
@@ -112,6 +202,37 @@ impl SearchService {
         }
 
         parse_search_results(&output.stdout)
+    }
+
+    async fn search_rutube(
+        query: &str,
+        limit: u32,
+    ) -> Result<Vec<SearchResult>, SearchError> {
+        let url = format!(
+            "https://rutube.ru/api/search/video/?query={}&page=1&per_page={}",
+            urlencoding::encode(query),
+            limit
+        );
+
+        debug!("Searching Rutube with URL: {}", url);
+
+        let response = reqwest::get(&url)
+            .await
+            .map_err(|e| SearchError::IoError(format!("Rutube API request failed: {}", e)))?;
+
+        if !response.status().is_success() {
+            return Err(SearchError::CommandFailed(format!(
+                "Rutube API returned status: {}",
+                response.status()
+            )));
+        }
+
+        let body = response
+            .text()
+            .await
+            .map_err(|e| SearchError::IoError(format!("Failed to read Rutube response: {}", e)))?;
+
+        parse_rutube_results(&body)
     }
 }
 
@@ -143,6 +264,50 @@ fn is_rate_limit_message(message: &str) -> bool {
         || lower.contains("too many requests")
         || lower.contains("rate limit")
         || lower.contains("response code: 429")
+}
+
+#[derive(Debug, Deserialize)]
+struct RutubeSearchResponse {
+    results: Vec<RutubeVideo>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RutubeVideo {
+    id: String,
+    title: String,
+    video_url: String,
+    thumbnail_url: Option<String>,
+    duration: Option<u64>,
+    author: Option<RutubeAuthor>,
+    hits: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RutubeAuthor {
+    name: String,
+}
+
+fn parse_rutube_results(json: &str) -> Result<Vec<SearchResult>, SearchError> {
+    let response: RutubeSearchResponse = serde_json::from_str(json)
+        .map_err(|e| SearchError::JsonParseError(format!("Failed to parse Rutube response: {}", e)))?;
+
+    let results: Vec<SearchResult> = response
+        .results
+        .into_iter()
+        .map(|video| SearchResult {
+            id: video.id.clone(),
+            title: video.title,
+            url: video.video_url,
+            thumbnail: video.thumbnail_url,
+            duration: video.duration,
+            uploader: video.author.map(|a| a.name),
+            view_count: video.hits,
+            platform: Platform::Rutube,
+        })
+        .collect();
+
+    info!("Parsed {} Rutube search results", results.len());
+    Ok(results)
 }
 
 fn parse_search_results(stdout: &[u8]) -> Result<Vec<SearchResult>, SearchError> {
@@ -192,8 +357,8 @@ struct RawSearchEntry {
     extractor_key: Option<String>,
     uploader: Option<String>,
     channel: Option<String>,
-    duration: Option<u64>,
-    view_count: Option<u64>,
+    duration: Option<f64>,
+    view_count: Option<f64>,
     thumbnail: Option<String>,
     thumbnails: Option<Vec<ThumbnailEntry>>,
 }
@@ -247,9 +412,9 @@ impl TryFrom<RawSearchEntry> for SearchResult {
             title,
             url: resolved_url,
             thumbnail: resolved_thumbnail,
-            duration,
+            duration: duration.map(|d| d as u64),
             uploader,
-            view_count,
+            view_count: view_count.map(|v| v as u64),
             platform,
         })
     }
@@ -477,6 +642,29 @@ INVALID JSON LINE
             SearchError::InvalidQuery(_) => {}
             _ => panic!("Expected InvalidQuery error"),
         }
+    }
+
+    #[test]
+    fn test_url_heuristic() {
+        // This test verifies the logic used inside search() method
+        // We can't easily test search() directly without mocking Command, 
+        // so we replicate the logic here for verification.
+        
+        fn check_heuristic(query: &str) -> String {
+            let trimmed = query.trim();
+            let is_url_like = !trimmed.contains(char::is_whitespace) && trimmed.contains('.');
+            if is_url_like && !trimmed.starts_with("http") {
+                format!("https://{}", trimmed)
+            } else {
+                trimmed.to_string()
+            }
+        }
+
+        assert_eq!(check_heuristic("funny cats"), "funny cats");
+        assert_eq!(check_heuristic("tiktok.com/@user/video"), "https://tiktok.com/@user/video");
+        assert_eq!(check_heuristic("https://youtube.com"), "https://youtube.com");
+        assert_eq!(check_heuristic("example.com"), "https://example.com");
+        assert_eq!(check_heuristic("word"), "word"); // No dot, so treated as search
     }
 
     #[test]

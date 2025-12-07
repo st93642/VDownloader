@@ -3,14 +3,14 @@
 
 A cross-platform desktop video downloader application built with Rust and GTK4.
 
-## Planned Features
+## Features
 
-- 🎥 **Multi-Platform Support**: Download from YouTube, TikTok, X (Twitter), VK Video, Rutube, Instagram, and Reddit
+- 🎥 **Multi-Platform Support**: Download from YouTube, TikTok, X (Twitter), VK Video, Rutube, Instagram, Reddit, and Dzen
+- 🔍 **Integrated Search**: Search for videos directly within the app (powered by yt-dlp)
 - 🖥️ **Native Desktop App**: GTK4-based GUI for Linux, Windows, and macOS
 - 🦀 **Rust-Powered**: Fast, safe, and reliable video downloads
-- 📊 **Download Queue**: Manage multiple simultaneous downloads
+- 📊 **Download Queue**: Manage multiple simultaneous downloads (infrastructure ready)
 - 🎨 **Modern UI**: Clean, intuitive interface following GNOME HIG guidelines
-- 📝 **Download History**: Track and manage previous downloads
 - ⚡ **Fast & Efficient**: Async/await for non-blocking downloads
 
 ## Tested Platforms

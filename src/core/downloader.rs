@@ -5,7 +5,7 @@
 /*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
 /*                                                          TT         SS II */
 /*  Created: Dec 07 2025 13:36 st93642                      TT    SSSSSSS II */
-/*  Updated: Dec 07 2025 16:03 st93642                                       */
+/*  Updated: Dec 07 2025 18:22 st93642                                       */
 /*                                                                           */
 /*   Transport and Telecommunication Institute - Riga, Latvia                */
 /*                       https://tsi.lv                                      */
@@ -161,6 +161,19 @@ impl VideoDownloader {
                 }
             }
         }
+        // Handle Dzen URLs - strip query parameters and normalize article URLs
+        if url.contains("dzen.ru") {
+            let clean_url = if let Some(idx) = url.find('?') {
+                &url[..idx]
+            } else {
+                url
+            };
+            
+            // Convert article URLs (/a/) to video URLs if they redirect to video content
+            // Article URLs often trigger a broken extractor, so we skip them
+            // and let yt-dlp handle the URL as-is after cleaning
+            return clean_url.to_string();
+        }
         url.to_string()
     }
 
@@ -198,6 +211,7 @@ impl VideoDownloader {
             .socket_timeout("30")
             .extract_audio(false)
             .output_template(&output_template)
+            .extra_arg("--simulate")
             .run();
 
         match result {
@@ -279,6 +293,11 @@ impl VideoDownloader {
                 } else if error_msg.contains("Network") || error_msg.contains("Connection") {
                     warn!("Network error: {}", e);
                     Err(DownloadError::DownloadFailed(error_msg))
+                } else if error_msg.contains("KeyError") && error_msg.contains("exportResponse") && url.contains("dzen.ru") {
+                    warn!("Dzen article/channel URL detected (extractor broken): {}", e);
+                    Err(DownloadError::DownloadFailed(
+                        "Dzen article/channel URLs are currently not supported by yt-dlp. Please use direct video URLs (dzen.ru/video/watch/...)".to_string(),
+                    ))
                 } else {
                     warn!("Download error: {}", e);
                     Err(DownloadError::DownloadFailed(error_msg))
@@ -495,5 +514,16 @@ mod tests {
         let url_no_video = "https://vkvideo.ru/playlist/-220754053_3";
         let sanitized_no_video = VideoDownloader::sanitize_url(url_no_video);
         assert_eq!(sanitized_no_video, url_no_video);
+    }
+
+    #[test]
+    fn test_sanitize_url_dzen() {
+        let url = "https://dzen.ru/video/watch/634b04f2596d3e28c83c233e?rid=12345&referrer_clid=1400";
+        let sanitized = VideoDownloader::sanitize_url(url);
+        assert_eq!(sanitized, "https://dzen.ru/video/watch/634b04f2596d3e28c83c233e");
+
+        let url_clean = "https://dzen.ru/video/watch/634b04f2596d3e28c83c233e";
+        let sanitized_clean = VideoDownloader::sanitize_url(url_clean);
+        assert_eq!(sanitized_clean, url_clean);
     }
 }
