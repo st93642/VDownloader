@@ -69,6 +69,8 @@ jobs:
     
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: x86_64-pc-windows-gnu
     
     - name: Cache cargo registry
       uses: actions/cache@v4
@@ -92,9 +94,10 @@ jobs:
       shell: msys2 {0}
       run: |
         export PKG_CONFIG_PATH="/ucrt64/lib/pkgconfig"
-        cargo build --release
+        export PATH="$HOME/.cargo/bin:$PATH"
+        cargo build --release --target x86_64-pc-windows-gnu
         mkdir -p dist
-        cp target/release/vdownloader.exe dist/vdownloader-windows.exe
+        cp target/x86_64-pc-windows-gnu/release/vdownloader.exe dist/vdownloader-windows.exe
     
     - name: Upload Windows binary
       uses: actions/upload-artifact@v4
