@@ -92,6 +92,7 @@ jobs:
       shell: msys2 {0}
       run: |
         export PKG_CONFIG_PATH="/ucrt64/lib/pkgconfig"
+        export PATH="/c/Users/runneradmin/.cargo/bin:$PATH"
         cargo build --release
         mkdir -p dist
         cp target/release/vdownloader.exe dist/vdownloader-windows.exe
