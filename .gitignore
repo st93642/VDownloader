@@ -19,6 +19,11 @@ Thumbs.db
 *.dylib
 *.dll
 *.exe
+*.AppImage
+dist/
+AppDir/
+linuxdeploy-*.AppImage
+linuxdeploy-plugin-*.sh
 
 # Logs
 *.log

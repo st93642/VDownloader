@@ -5,6 +5,7 @@
 | Script | Platform | Description |
 |--------|----------|-------------|
 | `build.sh` | Linux (multi) | Native Linux + optional Windows cross-compile |
+| `build-appimage.sh` | Linux | Portable AppImage with bundled dependencies |
 | `build-macos.sh` | macOS | Native macOS build + app bundle |
 | `build.bat` | Windows | Native Windows build |
 
@@ -12,9 +13,15 @@
 
 ### Linux
 ```bash
+# Standalone binary
 chmod +x build.sh
 ./build.sh
 # Output: dist/vdownloader-linux
+
+# AppImage (portable, bundled dependencies)
+chmod +x build-appimage.sh
+./build-appimage.sh
+# Output: dist/VDownloader-x86_64.AppImage
 ```
 
 ### macOS
@@ -33,7 +40,8 @@ REM Output: dist\vdownloader-windows.exe
 ## 📊 Build Results
 
 Current build status:
-- ✅ Linux: 4.0 MB (built)
+- ✅ Linux Binary: 4.0 MB (built)
+- ✅ Linux AppImage: 36 MB (built, bundled)
 - ⏳ Windows: ~4-5 MB (requires Windows or MinGW)
 - ⏳ macOS: ~4-5 MB (requires macOS)
 
@@ -51,10 +59,11 @@ Workflow: `.github/workflows/build.yml`
 
 ```
 dist/
-├── vdownloader-linux          # Linux executable
-├── vdownloader-windows.exe    # Windows executable
-├── vdownloader-macos          # macOS executable
-└── VDownloader.app/           # macOS app bundle
+├── vdownloader-linux              # Linux executable
+├── VDownloader-x86_64.AppImage    # Linux AppImage (portable)
+├── vdownloader-windows.exe        # Windows executable
+├── vdownloader-macos              # macOS executable
+└── VDownloader.app/               # macOS app bundle
     └── Contents/
         ├── MacOS/vdownloader
         └── Info.plist
