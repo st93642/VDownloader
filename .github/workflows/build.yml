@@ -100,6 +100,17 @@ jobs:
         cargo build --release --target x86_64-pc-windows-gnu
         mkdir -p dist
         cp target/x86_64-pc-windows-gnu/release/vdownloader.exe dist/vdownloader-windows.exe
+        
+    - name: Verify Windows executable
+      shell: msys2 {0}
+      run: |
+        if [ -f "dist/vdownloader-windows.exe" ]; then
+          echo "✓ Windows executable created successfully"
+          ls -lh dist/vdownloader-windows.exe
+        else
+          echo "✗ Failed to create Windows executable"
+          exit 1
+        fi
     
     - name: Upload Windows binary
       uses: actions/upload-artifact@v4
