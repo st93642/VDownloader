@@ -238,14 +238,12 @@ impl VideoDownloader {
                     for line in reader.lines().map_while(std::result::Result::ok) {
                         // Print to terminal so user sees progress there too
                         println!("{}", line);
-                        
+
                         // Parse progress
                         // [download]  45.0% of 10.00MiB at 2.00MiB/s ETA 00:05
                         if line.starts_with("[download]") && line.contains("%") {
                             if let Some(pct_str) = line.split_whitespace().nth(1) {
-                                if let Ok(pct_val) =
-                                    pct_str.trim_end_matches('%').parse::<f32>()
-                                {
+                                if let Ok(pct_val) = pct_str.trim_end_matches('%').parse::<f32>() {
                                     on_progress(pct_val / 100.0);
                                 }
                             }
