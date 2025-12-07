@@ -5,7 +5,7 @@
 #  By: st93642@students.tsi.lv                               TT    SSSSSSS II #
 #                                                            TT         SS II #
 #  Created: Dec 07 2025 13:37 st93642                        TT    SSSSSSS II #
-#  Updated: Dec 07 2025 18:40 st93642                                         #
+#  Updated: Dec 07 2025 23:04 st93642                                         #
 #                                                                             #
 #   Transport and Telecommunication Institute - Riga, Latvia                  #
 #                       https://tsi.lv                                        #
@@ -48,10 +48,13 @@ serde_json = "1.0"
 # Logging
 log = "0.4"
 env_logger = "0.11"
+
+# Regular expressions
 regex = "1.12.2"
 
 [profile.release]
-lto = true
-codegen-units = 1
-opt-level = 3
-strip = true
+opt-level = "z"     # Optimize for size (smaller binary)
+lto = true          # Enable Link Time Optimization
+codegen-units = 1   # Better optimization
+strip = true        # Strip symbols for smaller binary
+panic = "abort"     # Reduce binary size
