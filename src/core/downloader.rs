@@ -1,3 +1,16 @@
+/*****************************************************************************/
+/*                                                                           */
+/*  downloader.rs                                        TTTTTTTT SSSSSSS II */
+/*                                                          TT    SS      II */
+/*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
+/*                                                          TT         SS II */
+/*  Created: Dec 07 2025 13:36 st93642                      TT    SSSSSSS II */
+/*  Updated: Dec 07 2025 13:48 st93642                                       */
+/*                                                                           */
+/*   Transport and Telecommunication Institute - Riga, Latvia                */
+/*                       https://tsi.lv                                      */
+/*****************************************************************************/
+
 use crate::core::error::{DownloadError, Result};
 use log::{debug, info, warn};
 use regex::Regex;
@@ -159,6 +172,13 @@ impl VideoDownloader {
             || output_path.ends_with(".mkv")
             || output_path.ends_with(".webm");
 
+        // Determine working directory for temp files
+        let working_dir = if is_file_path {
+            Path::new(output_path).parent().unwrap_or(Path::new("."))
+        } else {
+            Path::new(output_path)
+        };
+
         let output_template = if is_file_path {
             output_path.to_string()
         } else {
@@ -188,6 +208,7 @@ impl VideoDownloader {
 
                 // Perform actual download
                 let mut cmd = Command::new("yt-dlp");
+                cmd.current_dir(working_dir);
                 cmd.arg(url)
                     .arg("-o")
                     .arg(&output_template)
@@ -271,6 +292,13 @@ impl VideoDownloader {
     where
         F: Fn(f32) + Send + Sync + 'static,
     {
+        // Determine working directory for temp files
+        let working_dir = if is_file_path {
+            Path::new(output_path).parent().unwrap_or(Path::new("."))
+        } else {
+            Path::new(output_path)
+        };
+
         let output_template = if is_file_path {
             output_path.to_string()
         } else {
@@ -289,6 +317,7 @@ impl VideoDownloader {
                     if let Some(video) = entries.first() {
                         // Perform actual download for the first item
                         let mut cmd = Command::new("yt-dlp");
+                        cmd.current_dir(working_dir);
                         cmd.arg(url)
                             .arg("-o")
                             .arg(&output_template)

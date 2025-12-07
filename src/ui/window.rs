@@ -1,3 +1,16 @@
+/*****************************************************************************/
+/*                                                                           */
+/*  window.rs                                            TTTTTTTT SSSSSSS II */
+/*                                                          TT    SS      II */
+/*  By: st93642@students.tsi.lv                             TT    SSSSSSS II */
+/*                                                          TT         SS II */
+/*  Created: Dec 07 2025 13:37 st93642                      TT    SSSSSSS II */
+/*  Updated: Dec 07 2025 13:48 st93642                                       */
+/*                                                                           */
+/*   Transport and Telecommunication Institute - Riga, Latvia                */
+/*                       https://tsi.lv                                      */
+/*****************************************************************************/
+
 use crate::core::downloader::{DownloadRequest, VideoDownloader};
 use crate::core::error::DownloadError;
 use gtk4::{
@@ -85,10 +98,14 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
     let window_clone = window.clone();
     let path_label_clone = path_label.clone();
     let selected_path_clone = selected_path.clone();
+    let videos_path_clone = videos_path.clone();
+
     browse_button.connect_clicked(move |_| {
+        let initial_folder = gtk4::gio::File::for_path(&videos_path_clone);
         let dialog = FileDialog::builder()
             .title("Save Video As")
             .initial_name("video.mp4")
+            .initial_folder(&initial_folder)
             .modal(true)
             .build();
 
