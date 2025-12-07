@@ -18,9 +18,13 @@ Thumbs.db
 *.so
 *.dylib
 *.dll
+# Ignore all executables except the committed Windows build
 *.exe
-*.AppImage
-dist/
+!dist/vdownloader-windows.exe
+# Ignore dist except Windows executable and README
+dist/*
+!dist/vdownloader-windows.exe
+!dist/README.md
 AppDir/
 linuxdeploy-*.AppImage
 linuxdeploy-plugin-*.sh
