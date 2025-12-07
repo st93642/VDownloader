@@ -20,7 +20,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use youtube_dl::{YoutubeDl, YoutubeDlOutput};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Platform {
     YouTube,
     TikTok,
