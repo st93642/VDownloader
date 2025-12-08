@@ -140,12 +140,26 @@ src/
     └── components/   # UI components
 ```
 
+## Documentation
+
+### For Developers
+
+- **[CODEBASE_INDEX.md](CODEBASE_INDEX.md)** - Project structure and module overview
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design and architecture
+- **[SETUP.md](SETUP.md)** - Development environment setup
+- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - How to modify and extend the code
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Public Rust API documentation
+
+### For Users & Contributors
+
+- **[BUILD.md](BUILD.md)** - Platform-specific build instructions
+- **[DISTRIBUTION.md](DISTRIBUTION.md)** - Release and distribution guidelines
+- **[WINDOWS_PORTABLE.md](WINDOWS_PORTABLE.md)** - Windows portable build documentation
+
 ## Downloads
 
 - **Releases**: [GitHub Releases](https://github.com/st93642/VDownloader/releases)
 - **Latest Builds**: [dist/](dist/) (auto-updated by CI)
-- **Documentation**: [BUILD.md](BUILD.md) | [DISTRIBUTION.md](DISTRIBUTION.md)
-- **Windows Portable**: [WINDOWS_PORTABLE.md](WINDOWS_PORTABLE.md)
 
 ## Troubleshooting
 
