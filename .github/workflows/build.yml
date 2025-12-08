@@ -103,17 +103,96 @@ jobs:
         # Allow pkg-config cross-compilation
         export PKG_CONFIG_ALLOW_CROSS=1
         cargo build --release --target x86_64-pc-windows-gnu
-        mkdir -p dist
+        mkdir -p dist/windows-portable
+        cp target/x86_64-pc-windows-gnu/release/vdownloader.exe dist/windows-portable/vdownloader.exe
         cp target/x86_64-pc-windows-gnu/release/vdownloader.exe dist/vdownloader-windows.exe
-        
-    - name: Verify Windows executable
+    
+    - name: Bundle Windows portable package
       shell: msys2 {0}
       run: |
+        echo "Creating portable Windows package..."
+        cd dist/windows-portable
+        
+        # Copy all required GTK4 DLLs
+        for dll in libgtk-4-1.dll libgdk_pixbuf-2.0-0.dll libgio-2.0-0.dll libglib-2.0-0.dll \
+                   libgobject-2.0-0.dll libgmodule-2.0-0.dll libcairo-2.dll libcairo-gobject-2.dll \
+                   libpango-1.0-0.dll libpangocairo-1.0-0.dll libpangoft2-1.0-0.dll libpangowin32-1.0-0.dll \
+                   libharfbuzz-0.dll libfontconfig-1.dll libfreetype-6.dll libpng16-16.dll libepoxy-0.dll \
+                   libfribidi-0.dll libgraphene-1.0-0.dll libjpeg-8.dll libtiff-6.dll libintl-8.dll \
+                   libpcre2-8-0.dll libiconv-2.dll libffi-8.dll libwinpthread-1.dll zlib1.dll libbz2-1.dll \
+                   libexpat-1.dll libbrotlicommon.dll libbrotlidec.dll libpixman-1-0.dll; do
+          if [ -f "/ucrt64/bin/$dll" ]; then
+            cp "/ucrt64/bin/$dll" . || true
+          fi
+        done
+        
+        # Copy GTK modules and data
+        mkdir -p lib/gdk-pixbuf-2.0 lib/gtk-4.0 share/glib-2.0/schemas share/icons
+        cp -r /ucrt64/lib/gdk-pixbuf-2.0/* lib/gdk-pixbuf-2.0/ || true
+        cp -r /ucrt64/lib/gtk-4.0/* lib/gtk-4.0/ || true
+        cp -r /ucrt64/share/glib-2.0/schemas/* share/glib-2.0/schemas/ || true
+        cp -r /ucrt64/share/icons/hicolor share/icons/ || true
+        cp -r /ucrt64/share/icons/Adwaita share/icons/ || true
+        
+        # Compile schemas
+        /ucrt64/bin/glib-compile-schemas.exe share/glib-2.0/schemas || true
+        
+        # Create launcher script
+        cat > VDownloader.bat << 'EOF'
+        @echo off
+        set "DIR=%~dp0"
+        set "PATH=%DIR%;%PATH%"
+        set "GDK_PIXBUF_MODULE_FILE=%DIR%\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache"
+        set "GTK_DATA_PREFIX=%DIR%"
+        set "XDG_DATA_DIRS=%DIR%\share;%XDG_DATA_DIRS%"
+        start "" "%DIR%\vdownloader.exe" %*
+        EOF
+        
+        # Create README
+        cat > README.txt << 'EOF'
+        VDownloader - Portable Windows Version
+        ========================================
+        
+        This is a portable version that includes all GTK4 dependencies.
+        
+        To run:
+          1. Double-click VDownloader.bat (recommended)
+          OR
+          2. Double-click vdownloader.exe directly
+        
+        Requirements:
+          - yt-dlp (download from https://github.com/yt-dlp/yt-dlp)
+          - Place yt-dlp.exe in the same folder or add to PATH
+        
+        The package includes all GTK4 runtime libraries, icon themes, and schemas.
+        No additional installation required!
+        
+        EOF
+        
+        cd ../..
+        
+        # Create zip package
+        cd dist
+        zip -r vdownloader-windows-portable.zip windows-portable
+        cd ..
+        
+    - name: Verify Windows builds
+      shell: msys2 {0}
+      run: |
+        echo "=== Build Verification ==="
         if [ -f "dist/vdownloader-windows.exe" ]; then
           echo "✓ Windows executable created successfully"
           ls -lh dist/vdownloader-windows.exe
         else
           echo "✗ Failed to create Windows executable"
+          exit 1
+        fi
+        
+        if [ -f "dist/vdownloader-windows-portable.zip" ]; then
+          echo "✓ Windows portable package created successfully"
+          ls -lh dist/vdownloader-windows-portable.zip
+        else
+          echo "✗ Failed to create Windows portable package"
           exit 1
         fi
     
@@ -122,6 +201,26 @@ jobs:
       with:
         name: vdownloader-windows
         path: dist/vdownloader-windows.exe
+    
+    - name: Upload Windows portable package
+      uses: actions/upload-artifact@v4
+      with:
+        name: vdownloader-windows-portable
+        path: dist/vdownloader-windows-portable.zip
+    
+    - name: Commit Windows builds to repository
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      shell: msys2 {0}
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        git add -f dist/vdownloader-windows.exe dist/vdownloader-windows-portable.zip
+        if git diff --staged --quiet; then
+          echo "No changes to Windows builds"
+        else
+          git commit -m "Update Windows builds (built by GitHub Actions)"
+          git push
+        fi
 
   build-macos:
     runs-on: macos-latest
@@ -184,6 +283,7 @@ jobs:
         files: |
           vdownloader-linux/vdownloader-linux
           vdownloader-windows/vdownloader-windows.exe
+          vdownloader-windows-portable/vdownloader-windows-portable.zip
           vdownloader-macos/vdownloader-macos
         draft: false
         prerelease: false

@@ -19,7 +19,11 @@ Thumbs.db
 *.dylib
 *.dll
 *.exe
-dist/
+!dist/vdownloader-windows.exe
+dist/*
+!dist/vdownloader-windows.exe
+!dist/vdownloader-windows-portable.zip
+!dist/README.md
 AppDir/
 linuxdeploy-*.AppImage
 linuxdeploy-plugin-*.sh
