@@ -1,138 +1,153 @@
 
 # VDownloader
 
-A cross-platform desktop video downloader application built with Rust and GTK4.
+A modern, cross-platform video downloader with GTK4 interface. Download videos from YouTube, TikTok, X, VK, Rutube, Reddit, Dzen, and more.
+
+## Quick Start
+
+### For End Users
+
+**Windows (Portable - No Installation):**
+1. Download `vdownloader-windows-portable.zip` from [Releases](https://github.com/st93642/VDownloader/releases) or [dist/](dist/)
+2. Extract and run `VDownloader.bat`
+3. Done! Everything is bundled (GTK4 + yt-dlp)
+
+**Linux (AppImage):**
+1. Download `VDownloader-linux.AppImage`
+2. Make executable: `chmod +x VDownloader-linux.AppImage`
+3. Run: `./VDownloader-linux.AppImage`
+
+**Linux (Binary):**
+```bash
+# Install GTK4
+sudo apt install libgtk-4-1 yt-dlp  # Ubuntu/Debian
+# OR
+sudo dnf install gtk4 yt-dlp        # Fedora
+
+# Download and run
+./vdownloader-linux
+```
+
+**macOS:**
+```bash
+brew install gtk4 yt-dlp
+./vdownloader-macos
+```
+
+### For Developers
+
+**Prerequisites:**
+- Rust (stable)
+- GTK4 development libraries
+- yt-dlp
+
+**Build:**
+```bash
+git clone https://github.com/st93642/VDownloader.git
+cd VDownloader
+cargo build --release
+```
+
+**Platform-specific build instructions:** See [BUILD.md](BUILD.md)
 
 ## Features
 
-- 🎥 **Multi-Platform Support**: Download from YouTube, TikTok, X (Twitter), VK Video, Rutube, Instagram, Reddit, and Dzen
-- 🔍 **Integrated Search**: Search for videos directly within the app (powered by yt-dlp)
-- 🖥️ **Native Desktop App**: GTK4-based GUI for Linux, Windows, and macOS
-- 🦀 **Rust-Powered**: Fast, safe, and reliable video downloads
-- 📊 **Download Queue**: Manage multiple simultaneous downloads (infrastructure ready)
-- 🎨 **Modern UI**: Clean, intuitive interface following GNOME HIG guidelines
-- ⚡ **Fast & Efficient**: Async/await for non-blocking downloads
-
-## Tested Platforms
-
-The following platforms have been verified to work:
-
-- ✅ YouTube
-- ✅ X (Twitter)
-- ✅ VK Video
-- ✅ Rutube
-- ✅ TikTok
-- ✅ Reddit
-- ✅ Dzen
-- ⏳ Instagram (In Progress)
+- 🎥 Multi-platform support (YouTube, TikTok, X, VK, Rutube, Reddit, Dzen, Instagram)
+- 🔍 Integrated video search
+- 📊 Download queue management
+- 🎨 Modern GTK4 interface
+- ⚡ Fast, async Rust implementation
 
 ## Technology Stack
 
 - **Language**: Rust 🦀
-- **GUI Framework**: GTK4
-- **Video Extraction**: yt-dlp (via youtube_dl Rust crate)
-- **Async Runtime**: Tokio
+- **GUI**: GTK4
+- **Engine**: yt-dlp
+- **Runtime**: Tokio
+
+## Distribution Formats
+
+| Platform | Format | Size | Dependencies |
+|----------|--------|------|--------------|
+| Windows | Portable ZIP | ~150 MB | None (all bundled) |
+| Windows | Standard EXE | ~4 MB | GTK4 + yt-dlp |
+| Linux | AppImage | ~36 MB | None (all bundled) |
+| Linux | Binary | ~4 MB | GTK4 + yt-dlp |
+| macOS | Binary | ~4 MB | GTK4 + yt-dlp |
+
+## Building
 
 ### Prerequisites
 
-**Development Tools:**
-
-- Rust (latest stable version)
-- GTK4 development libraries
-- Cargo
-- pkg-config
-
-**Runtime Dependencies:**
-
-- yt-dlp (Python CLI tool)
-
-**Linux (Ubuntu/Debian):**
-
+**Linux:**
 ```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Install GTK4 development libraries
-sudo apt install libgtk-4-dev build-essential pkg-config
-
-# Install yt-dlp
-sudo apt install yt-dlp
-# OR: pip3 install yt-dlp
+sudo apt install libgtk-4-dev build-essential pkg-config yt-dlp
 ```
 
 **macOS:**
-
 ```bash
-# Install dependencies via Homebrew
-brew install rust gtk4 yt-dlp
+brew install gtk4 yt-dlp
 ```
 
 **Windows:**
+```bash
+# MSYS2 UCRT64
+pacman -S mingw-w64-ucrt-x86_64-gtk4 mingw-w64-ucrt-x86_64-toolchain
+```
 
-- Install Rust from <https://rustup.rs/>
-- Install GTK4 via MSYS2
-- Install yt-dlp: `pip install yt-dlp`
-
-### Building and Running
+### Build Commands
 
 ```bash
-# Clone the repository
-git clone https://github.com/st93642/VDownloader.git
-cd VDownloader
-
-# Build the project
+# Standard build
 cargo build --release
 
-# Run the application
-cargo run
-
-# Run with logging enabled
+# Run with logging
 RUST_LOG=info cargo run
 
 # Run tests
 cargo test
 
-# Check code formatting
-cargo fmt --check
-
-# Run linter
-cargo clippy
+# Platform-specific builds
+./build.sh                    # Linux
+./build-appimage.sh           # Linux AppImage
+./build-windows-portable.bat  # Windows portable
+./build-macos.sh              # macOS
 ```
 
-**Note:** Make sure you have installed GTK4 development libraries before building. See Prerequisites section above.
+**Full documentation:** [BUILD.md](BUILD.md) | [DISTRIBUTION.md](DISTRIBUTION.md)
 
-### Project Structure
+## Project Structure
 
-```text
-VDownloader/
-├── src/
-│   ├── main.rs              # Application entry point
-│   ├── ui/                  # GTK4 user interface
-│   │   ├── mod.rs
-│   │   ├── window.rs        # Main application window
-│   │   └── components/      # Reusable UI components
-│   │       ├── mod.rs
-│   │       └── download_queue.rs
-│   └── core/                # Business logic
-│       ├── mod.rs
-│       ├── downloader.rs    # Video download service
-│       ├── queue.rs         # Download queue management
-│       └── error.rs         # Error types
-├── Cargo.toml              # Project dependencies
-├── README.md               # This file
-└── docs/                   # Additional documentation
+```
+src/
+├── main.rs           # Entry point
+├── core/             # Business logic (platform-agnostic)
+│   ├── downloader.rs # Video download engine
+│   ├── queue.rs      # Queue management
+│   ├── search.rs     # Video search
+│   └── error.rs      # Error handling
+└── ui/               # GTK4 interface
+    ├── window.rs     # Main window
+    └── components/   # UI components
 ```
 
-## Releases
+## Downloads
 
-Pre-built binaries for Linux, Windows, and macOS are available on the [Releases](https://github.com/st93642/VDownloader/releases) page.
+- **Releases**: [GitHub Releases](https://github.com/st93642/VDownloader/releases)
+- **Latest Builds**: [dist/](dist/) (auto-updated by CI)
+- **Documentation**: [BUILD.md](BUILD.md) | [DISTRIBUTION.md](DISTRIBUTION.md)
+- **Windows Portable**: [WINDOWS_PORTABLE.md](WINDOWS_PORTABLE.md)
 
-For information on creating releases, see [RELEASE.md](RELEASE.md).
+## Troubleshooting
+
+- **Windows "Missing DLL"**: See [WINDOWS_PORTABLE_TROUBLESHOOTING.md](WINDOWS_PORTABLE_TROUBLESHOOTING.md)
+- **Build Issues**: Check [BUILD.md](BUILD.md)
+- **Other Issues**: Open an [issue](https://github.com/st93642/VDownloader/issues)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE)
 
 ## Contributing
 
-Contributions are welcome!
+Contributions welcome! Please open an issue or PR.
