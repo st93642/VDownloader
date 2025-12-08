@@ -150,14 +150,20 @@ impl SearchService {
             match task.await {
                 Ok(Ok(results)) => aggregated_results.extend(results),
                 Ok(Err(e)) => errors.push(e),
-                Err(e) => errors.push(SearchError::CommandFailed(format!("Task join error: {}", e))),
+                Err(e) => errors.push(SearchError::CommandFailed(format!(
+                    "Task join error: {}",
+                    e
+                ))),
             }
         }
 
         // Filter out Dzen article URLs (/a/) as they trigger a broken extractor
         aggregated_results.retain(|result| {
             if result.platform == Platform::Dzen && result.url.contains("/a/") {
-                debug!("Filtering out Dzen article URL (unsupported): {}", result.url);
+                debug!(
+                    "Filtering out Dzen article URL (unsupported): {}",
+                    result.url
+                );
                 false
             } else {
                 true
@@ -205,10 +211,7 @@ impl SearchService {
         parse_search_results(&output.stdout)
     }
 
-    async fn search_rutube(
-        query: &str,
-        limit: u32,
-    ) -> Result<Vec<SearchResult>, SearchError> {
+    async fn search_rutube(query: &str, limit: u32) -> Result<Vec<SearchResult>, SearchError> {
         let url = format!(
             "https://rutube.ru/api/search/video/?query={}&page=1&per_page={}",
             urlencoding::encode(query),
@@ -289,8 +292,9 @@ struct RutubeAuthor {
 }
 
 fn parse_rutube_results(json: &str) -> Result<Vec<SearchResult>, SearchError> {
-    let response: RutubeSearchResponse = serde_json::from_str(json)
-        .map_err(|e| SearchError::JsonParseError(format!("Failed to parse Rutube response: {}", e)))?;
+    let response: RutubeSearchResponse = serde_json::from_str(json).map_err(|e| {
+        SearchError::JsonParseError(format!("Failed to parse Rutube response: {}", e))
+    })?;
 
     let results: Vec<SearchResult> = response
         .results
@@ -648,9 +652,9 @@ INVALID JSON LINE
     #[test]
     fn test_url_heuristic() {
         // This test verifies the logic used inside search() method
-        // We can't easily test search() directly without mocking Command, 
+        // We can't easily test search() directly without mocking Command,
         // so we replicate the logic here for verification.
-        
+
         fn check_heuristic(query: &str) -> String {
             let trimmed = query.trim();
             let is_url_like = !trimmed.contains(char::is_whitespace) && trimmed.contains('.');
@@ -662,8 +666,14 @@ INVALID JSON LINE
         }
 
         assert_eq!(check_heuristic("funny cats"), "funny cats");
-        assert_eq!(check_heuristic("tiktok.com/@user/video"), "https://tiktok.com/@user/video");
-        assert_eq!(check_heuristic("https://youtube.com"), "https://youtube.com");
+        assert_eq!(
+            check_heuristic("tiktok.com/@user/video"),
+            "https://tiktok.com/@user/video"
+        );
+        assert_eq!(
+            check_heuristic("https://youtube.com"),
+            "https://youtube.com"
+        );
         assert_eq!(check_heuristic("example.com"), "https://example.com");
         assert_eq!(check_heuristic("word"), "word"); // No dot, so treated as search
     }

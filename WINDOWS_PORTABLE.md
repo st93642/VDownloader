@@ -122,16 +122,16 @@ The workflow runs on every push to master.
 
 ## Advantages of Portable Build
 
-✅ **Zero Installation** - No admin rights needed  
-✅ **Fully Self-Contained** - All dependencies AND yt-dlp included  
-✅ **Portable** - Run from USB drive or any folder  
-✅ **User-Friendly** - Simple extract-and-run experience  
-✅ **Offline** - No internet needed after download  
+✅ **Zero Installation** - No admin rights needed
+✅ **Fully Self-Contained** - All dependencies AND yt-dlp included
+✅ **Portable** - Run from USB drive or any folder
+✅ **User-Friendly** - Simple extract-and-run experience
+✅ **Offline** - No internet needed after download
 ✅ **Always Latest** - yt-dlp version from build time
 
 ## Trade-offs
 
-⚠️ **Larger Download** - ~25-35x bigger than standard build  
+⚠️ **Larger Download** - ~25-35x bigger than standard build
 ⚠️ **yt-dlp Updates** - Bundled version may become outdated (update manually if needed)
 
 ## yt-dlp Updates

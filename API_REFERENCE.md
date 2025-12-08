@@ -40,6 +40,7 @@ pub enum Platform {
 ```
 
 **Variants**:
+
 - `YouTube` - YouTube and YouTube Shorts
 - `TikTok` - TikTok videos and compilations
 - `Twitter` - Twitter/X posts and threads
@@ -51,6 +52,7 @@ pub enum Platform {
 - `Other` - Any other platform (yt-dlp dependent)
 
 **Implementations**:
+
 - `PartialEq` - Compare platforms
 - `Eq` - Equality
 - `Clone` - Clone enum
@@ -71,12 +73,14 @@ pub struct DownloadRequest {
 ```
 
 **Fields**:
+
 - `url: String` - Video URL (must start with http:// or https://)
 - `platform: Platform` - Platform (auto-detected via `Platform::detect_platform()`)
 - `output_path: Option<String>` - Output directory path (defaults to current directory)
 - `overwrite: bool` - Whether to overwrite existing files (default: false)
 
 **Example**:
+
 ```rust
 let request = DownloadRequest {
     url: "https://youtube.com/watch?v=dQw4w9WgXcQ".to_string(),
@@ -101,6 +105,7 @@ pub enum DownloadStatus {
 ```
 
 **Variants**:
+
 - `Pending` - Queued but not yet downloading
 - `Downloading { progress: f32 }` - In progress with 0.0-1.0 progress
 - `Completed { file_path: String }` - Successfully completed with output path
@@ -117,11 +122,11 @@ pub struct VideoDownloader {
 
 impl VideoDownloader {
     pub fn new(output_directory: String) -> Self;
-    
+
     pub fn detect_platform(url: &str) -> Platform;
-    
+
     pub fn validate_url(url: &str) -> Result<()>;
-    
+
     pub async fn download(
         &self,
         request: DownloadRequest,
@@ -136,11 +141,13 @@ impl VideoDownloader {
 Create a new downloader instance.
 
 **Parameters**:
+
 - `output_directory: String` - Default output directory for downloads
 
 **Returns**: `VideoDownloader` instance
 
 **Example**:
+
 ```rust
 let downloader = VideoDownloader::new("/home/user/Videos".to_string());
 ```
@@ -150,11 +157,13 @@ let downloader = VideoDownloader::new("/home/user/Videos".to_string());
 Detect video platform from URL.
 
 **Parameters**:
+
 - `url: &str` - Video URL
 
 **Returns**: `Platform` enum
 
 **Example**:
+
 ```rust
 let platform = VideoDownloader::detect_platform("https://youtube.com/watch?v=123");
 assert_eq!(platform, Platform::YouTube);
@@ -165,18 +174,22 @@ assert_eq!(platform, Platform::YouTube);
 Validate URL format.
 
 **Parameters**:
+
 - `url: &str` - URL to validate
 
 **Returns**: `Result<(), DownloadError>`
+
 - `Ok(())` if valid
 - `Err(DownloadError::InvalidUrl(...))` if invalid
 
 **Validation rules**:
+
 - URL cannot be empty
 - URL must start with `http://` or `https://`
 - URL must be properly formatted
 
 **Example**:
+
 ```rust
 if let Err(e) = VideoDownloader::validate_url("not a url") {
     println!("Invalid: {}", e);  // Invalid URL: URL must start with...
@@ -188,13 +201,16 @@ if let Err(e) = VideoDownloader::validate_url("not a url") {
 Execute video download.
 
 **Parameters**:
+
 - `request: DownloadRequest` - Download request with URL and options
 
 **Returns**: `Result<String, DownloadError>`
+
 - `Ok(String)` - File path of downloaded video
 - `Err(DownloadError)` - Error during download
 
 **Error cases**:
+
 - `InvalidUrl` - URL validation failed
 - `InvalidOutputDirectory` - Directory doesn't exist or not writable
 - `DownloadFailed` - Download operation failed
@@ -206,6 +222,7 @@ Execute video download.
 - `Cancelled` - User cancelled download
 
 **Example**:
+
 ```rust
 let downloader = VideoDownloader::new("/home/user/Videos".to_string());
 let request = DownloadRequest {
@@ -253,6 +270,7 @@ pub enum SearchError {
 ```
 
 **Variants**:
+
 - `InvalidQuery(String)` - Empty or invalid search query
 - `CommandFailed(String)` - yt-dlp execution failed
 - `JsonParseError(String)` - JSON response parsing failed
@@ -279,6 +297,7 @@ pub struct SearchResult {
 ```
 
 **Fields**:
+
 - `id: String` - Unique identifier from platform
 - `title: String` - Video title/name
 - `url: String` - Direct link to video
@@ -289,6 +308,7 @@ pub struct SearchResult {
 - `platform: Platform` - Detected platform enum
 
 **Example**:
+
 ```rust
 SearchResult {
     id: "dQw4w9WgXcQ".to_string(),
@@ -314,9 +334,9 @@ pub struct SearchService {
 
 impl SearchService {
     pub fn new(default_limit: u32) -> Self;
-    
+
     pub fn default_limit(&self) -> u32;
-    
+
     pub async fn search(
         &self,
         query: &str,
@@ -332,11 +352,13 @@ impl SearchService {
 Create a new search service.
 
 **Parameters**:
+
 - `default_limit: u32` - Default result limit per platform (minimum 1)
 
 **Returns**: `SearchService` instance
 
 **Example**:
+
 ```rust
 let search = SearchService::new(10);  // 10 results per platform
 ```
@@ -348,6 +370,7 @@ Get the default result limit.
 **Returns**: `u32` - Default limit value
 
 **Example**:
+
 ```rust
 let search = SearchService::new(10);
 assert_eq!(search.default_limit(), 10);
@@ -358,18 +381,22 @@ assert_eq!(search.default_limit(), 10);
 Search for videos.
 
 **Parameters**:
+
 - `query: &str` - Search query (keyword or URL)
 - `limit: Option<u32>` - Result limit (None uses default)
 
 **Returns**: `Result<Vec<SearchResult>, SearchError>`
+
 - `Ok(Vec<SearchResult>)` - Search results from all platforms
 - `Err(SearchError)` - Error during search
 
 **Search modes**:
+
 - **Keyword search**: Returns aggregated results from YouTube, Dzen, Rutube
 - **URL search**: Returns single video with metadata
 
 **Error cases**:
+
 - `InvalidQuery` - Query is empty or whitespace
 - `CommandFailed` - yt-dlp execution failed
 - `JsonParseError` - JSON parsing failed
@@ -378,6 +405,7 @@ Search for videos.
 - `IoError` - File I/O error
 
 **Example - Keyword Search**:
+
 ```rust
 let search = SearchService::new(10);
 match search.search("rust programming", Some(5)).await {
@@ -391,6 +419,7 @@ match search.search("rust programming", Some(5)).await {
 ```
 
 **Example - URL Search**:
+
 ```rust
 let search = SearchService::new(10);
 match search.search("https://youtube.com/watch?v=dQw4w9WgXcQ", None).await {
@@ -421,6 +450,7 @@ pub struct QueueItem {
 ```
 
 **Fields**:
+
 - `id: String` - Unique queue item ID
 - `request: DownloadRequest` - Original download request
 - `status: DownloadStatus` - Current status
@@ -436,17 +466,17 @@ pub struct DownloadQueue {
 
 impl DownloadQueue {
     pub fn new() -> Self;
-    
+
     pub async fn add(&self, request: DownloadRequest) -> String;
-    
+
     pub async fn get(&self, id: &str) -> Option<QueueItem>;
-    
+
     pub async fn update_status(&self, id: &str, status: DownloadStatus);
-    
+
     pub async fn remove(&self, id: &str);
-    
+
     pub async fn list_all(&self) -> Vec<QueueItem>;
-    
+
     pub async fn clear(&self);
 }
 
@@ -464,6 +494,7 @@ Create a new download queue.
 **Returns**: `DownloadQueue` instance
 
 **Example**:
+
 ```rust
 let queue = DownloadQueue::new();
 ```
@@ -473,11 +504,13 @@ let queue = DownloadQueue::new();
 Add item to queue.
 
 **Parameters**:
+
 - `request: DownloadRequest` - Download request
 
 **Returns**: `String` - Unique item ID
 
 **Example**:
+
 ```rust
 let queue = DownloadQueue::new();
 let request = DownloadRequest {
@@ -495,13 +528,16 @@ println!("Added to queue: {}", item_id);  // download_0
 Get queue item by ID.
 
 **Parameters**:
+
 - `id: &str` - Item ID
 
 **Returns**: `Option<QueueItem>`
+
 - `Some(QueueItem)` if found
 - `None` if not found
 
 **Example**:
+
 ```rust
 if let Some(item) = queue.get("download_0").await {
     println!("Status: {:?}", item.status);
@@ -513,10 +549,12 @@ if let Some(item) = queue.get("download_0").await {
 Update item status.
 
 **Parameters**:
+
 - `id: &str` - Item ID
 - `status: DownloadStatus` - New status
 
 **Example**:
+
 ```rust
 queue.update_status("download_0", DownloadStatus::Downloading {
     progress: 0.5,
@@ -528,9 +566,11 @@ queue.update_status("download_0", DownloadStatus::Downloading {
 Remove item from queue.
 
 **Parameters**:
+
 - `id: &str` - Item ID
 
 **Example**:
+
 ```rust
 queue.remove("download_0").await;
 ```
@@ -542,6 +582,7 @@ Get all items in queue.
 **Returns**: `Vec<QueueItem>` - All items
 
 **Example**:
+
 ```rust
 let items = queue.list_all().await;
 for item in items {
@@ -554,6 +595,7 @@ for item in items {
 Clear all items from queue.
 
 **Example**:
+
 ```rust
 queue.clear().await;
 ```
@@ -597,6 +639,7 @@ pub type Result<T> = std::result::Result<T, DownloadError>;
 ```
 
 **Type Alias**:
+
 - `Result<T>` = `std::result::Result<T, DownloadError>`
 
 ## UI Module
@@ -618,6 +661,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow;
 Build and return the main application window.
 
 **Parameters**:
+
 - `app: &Application` - GTK Application instance
 
 **Returns**: `ApplicationWindow` - Main window with all UI components
@@ -633,9 +677,9 @@ pub struct SearchView {
 
 impl SearchView {
     pub fn new() -> Self;
-    
+
     pub fn container(&self) -> &gtk4::Box;
-    
+
     pub fn set_download_callback<F>(&mut self, callback: F)
     where
         F: Fn(SearchResult) + 'static,
@@ -661,11 +705,13 @@ Get the container widget for adding to UI.
 Register callback for download button clicks.
 
 **Parameters**:
+
 - `callback: F` - Closure called when user clicks Download on a result
   - Takes `SearchResult` as parameter
   - Called from GTK signal context
 
 **Example**:
+
 ```rust
 let mut search_view = SearchView::new();
 search_view.set_download_callback(|result: SearchResult| {
@@ -684,9 +730,9 @@ pub struct DownloadQueueWidget {
 
 impl DownloadQueueWidget {
     pub fn new() -> Self;
-    
+
     pub fn widget(&self) -> &gtk4::Box;
-    
+
     pub fn update_queue(&self, items: Vec<QueueItem>);
 }
 ```
@@ -733,6 +779,7 @@ pub enum SearchError {
 Supported video platforms.
 
 **Variants**:
+
 - `YouTube`
 - `TikTok`
 - `Twitter`
@@ -748,6 +795,7 @@ Supported video platforms.
 Download progress status.
 
 **Variants**:
+
 - `Pending` - Queued but not started
 - `Downloading { progress: f32 }` - In progress (0.0 to 1.0)
 - `Completed { file_path: String }` - Finished successfully
@@ -763,11 +811,11 @@ use vdownloader::core::downloader::{VideoDownloader, DownloadRequest, Platform};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let downloader = VideoDownloader::new("/home/user/Videos".to_string());
-    
+
     // Validate URL first
     let url = "https://youtube.com/watch?v=dQw4w9WgXcQ";
     VideoDownloader::validate_url(url)?;
-    
+
     // Create request
     let request = DownloadRequest {
         url: url.to_string(),
@@ -775,13 +823,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         output_path: Some("/home/user/Downloads".to_string()),
         overwrite: false,
     };
-    
+
     // Download
     match downloader.download(request).await {
         Ok(file_path) => println!("Downloaded to: {}", file_path),
         Err(e) => eprintln!("Download failed: {}", e),
     }
-    
+
     Ok(())
 }
 ```
@@ -794,7 +842,7 @@ use vdownloader::core::search::SearchService;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let search = SearchService::new(10);
-    
+
     match search.search("rust programming", Some(5)).await {
         Ok(results) => {
             for result in results {
@@ -809,7 +857,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Err(e) => eprintln!("Search failed: {}", e),
     }
-    
+
     Ok(())
 }
 ```
@@ -823,7 +871,7 @@ use vdownloader::core::downloader::{DownloadRequest, Platform, DownloadStatus};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let queue = DownloadQueue::new();
-    
+
     // Add items
     let request1 = DownloadRequest {
         url: "https://youtube.com/watch?v=123".to_string(),
@@ -832,7 +880,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         overwrite: false,
     };
     let id1 = queue.add(request1).await;
-    
+
     let request2 = DownloadRequest {
         url: "https://tiktok.com/video/456".to_string(),
         platform: Platform::TikTok,
@@ -840,24 +888,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         overwrite: false,
     };
     let id2 = queue.add(request2).await;
-    
+
     // List items
     let items = queue.list_all().await;
     println!("Queue has {} items", items.len());
-    
+
     // Update status
     queue.update_status(&id1, DownloadStatus::Downloading {
         progress: 0.5,
     }).await;
-    
+
     // Get item
     if let Some(item) = queue.get(&id1).await {
         println!("Item {}: {:?}", item.id, item.status);
     }
-    
+
     // Remove item
     queue.remove(&id2).await;
-    
+
     Ok(())
 }
 ```

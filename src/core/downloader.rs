@@ -168,7 +168,7 @@ impl VideoDownloader {
             } else {
                 url
             };
-            
+
             // Convert article URLs (/a/) to video URLs if they redirect to video content
             // Article URLs often trigger a broken extractor, so we skip them
             // and let yt-dlp handle the URL as-is after cleaning
@@ -240,36 +240,35 @@ impl VideoDownloader {
 
                 // Perform actual download
                 info!("Executing yt-dlp with output template: {}", output_template);
-                
+
                 // Get list of files before download to detect new file
                 let files_before: std::collections::HashSet<_> = if !is_file_path {
                     std::fs::read_dir(output_path)
                         .ok()
-                        .map(|entries| entries
-                            .filter_map(|e| e.ok())
-                            .filter_map(|e| e.file_name().into_string().ok())
-                            .collect())
+                        .map(|entries| {
+                            entries
+                                .filter_map(|e| e.ok())
+                                .filter_map(|e| e.file_name().into_string().ok())
+                                .collect()
+                        })
                         .unwrap_or_default()
                 } else {
                     std::collections::HashSet::new()
                 };
-                
+
                 let mut cmd = Command::new("yt-dlp");
                 cmd.current_dir(working_dir);
-                
+
                 // For Command::arg(), we don't need %% escaping since it doesn't go through shell
                 let cmd_template = if is_file_path {
                     output_path.to_string()
                 } else {
                     format!("{}/%(title)s.%(ext)s", output_path)
                 };
-                
+
                 info!("Passing to yt-dlp command: {}", cmd_template);
-                
-                cmd.arg(url)
-                    .arg("-o")
-                    .arg(&cmd_template)
-                    .arg("--newline"); // Force newlines for progress parsing
+
+                cmd.arg(url).arg("-o").arg(&cmd_template).arg("--newline"); // Force newlines for progress parsing
 
                 if overwrite {
                     cmd.arg("--force-overwrite");
@@ -310,7 +309,7 @@ impl VideoDownloader {
                 }
 
                 info!("Download completed: {}", video_title);
-                
+
                 // Detect the actual downloaded file by comparing directory contents
                 if is_file_path {
                     Ok(output_path.to_string())
@@ -318,14 +317,16 @@ impl VideoDownloader {
                     // Find newly created file
                     let files_after: std::collections::HashSet<_> = std::fs::read_dir(output_path)
                         .ok()
-                        .map(|entries| entries
-                            .filter_map(|e| e.ok())
-                            .filter_map(|e| e.file_name().into_string().ok())
-                            .collect())
+                        .map(|entries| {
+                            entries
+                                .filter_map(|e| e.ok())
+                                .filter_map(|e| e.file_name().into_string().ok())
+                                .collect()
+                        })
                         .unwrap_or_default();
-                    
+
                     let new_files: Vec<_> = files_after.difference(&files_before).collect();
-                    
+
                     if let Some(filename) = new_files.first() {
                         let full_path = format!("{}/{}", output_path, filename);
                         info!("Detected downloaded file: {}", full_path);
@@ -347,8 +348,14 @@ impl VideoDownloader {
                 } else if error_msg.contains("Network") || error_msg.contains("Connection") {
                     warn!("Network error: {}", e);
                     Err(DownloadError::DownloadFailed(error_msg))
-                } else if error_msg.contains("KeyError") && error_msg.contains("exportResponse") && url.contains("dzen.ru") {
-                    warn!("Dzen article/channel URL detected (extractor broken): {}", e);
+                } else if error_msg.contains("KeyError")
+                    && error_msg.contains("exportResponse")
+                    && url.contains("dzen.ru")
+                {
+                    warn!(
+                        "Dzen article/channel URL detected (extractor broken): {}",
+                        e
+                    );
                     Err(DownloadError::DownloadFailed(
                         "Dzen article/channel URLs are currently not supported by yt-dlp. Please use direct video URLs (dzen.ru/video/watch/...)".to_string(),
                     ))
@@ -383,7 +390,10 @@ impl VideoDownloader {
             format!("{}/%%(title)s.%%(ext)s", output_path)
         };
 
-        info!("Using output template for playlist download: {}", output_template);
+        info!(
+            "Using output template for playlist download: {}",
+            output_template
+        );
 
         // The youtube_dl crate needs the template without %% escaping
         let crate_template = if is_file_path {
@@ -406,28 +416,30 @@ impl VideoDownloader {
                         let files_before: std::collections::HashSet<_> = if !is_file_path {
                             std::fs::read_dir(output_path)
                                 .ok()
-                                .map(|entries| entries
-                                    .filter_map(|e| e.ok())
-                                    .filter_map(|e| e.file_name().into_string().ok())
-                                    .collect())
+                                .map(|entries| {
+                                    entries
+                                        .filter_map(|e| e.ok())
+                                        .filter_map(|e| e.file_name().into_string().ok())
+                                        .collect()
+                                })
                                 .unwrap_or_default()
                         } else {
                             std::collections::HashSet::new()
                         };
-                        
+
                         // Perform actual download for the first item
                         let mut cmd = Command::new("yt-dlp");
                         cmd.current_dir(working_dir);
-                        
+
                         // For Command::arg(), we don't need %% escaping since it doesn't go through shell
                         let cmd_template = if is_file_path {
                             output_path.to_string()
                         } else {
                             format!("{}/%(title)s.%(ext)s", output_path)
                         };
-                        
+
                         info!("Passing to yt-dlp command (playlist): {}", cmd_template);
-                        
+
                         cmd.arg(url)
                             .arg("-o")
                             .arg(&cmd_template)
@@ -478,16 +490,19 @@ impl VideoDownloader {
                             Ok(output_path.to_string())
                         } else {
                             // Find newly created file
-                            let files_after: std::collections::HashSet<_> = std::fs::read_dir(output_path)
-                                .ok()
-                                .map(|entries| entries
-                                    .filter_map(|e| e.ok())
-                                    .filter_map(|e| e.file_name().into_string().ok())
-                                    .collect())
-                                .unwrap_or_default();
-                            
+                            let files_after: std::collections::HashSet<_> =
+                                std::fs::read_dir(output_path)
+                                    .ok()
+                                    .map(|entries| {
+                                        entries
+                                            .filter_map(|e| e.ok())
+                                            .filter_map(|e| e.file_name().into_string().ok())
+                                            .collect()
+                                    })
+                                    .unwrap_or_default();
+
                             let new_files: Vec<_> = files_after.difference(&files_before).collect();
-                            
+
                             if let Some(filename) = new_files.first() {
                                 let full_path = format!("{}/{}", output_path, filename);
                                 info!("Detected downloaded file from playlist: {}", full_path);
@@ -623,9 +638,13 @@ mod tests {
 
     #[test]
     fn test_sanitize_url_dzen() {
-        let url = "https://dzen.ru/video/watch/634b04f2596d3e28c83c233e?rid=12345&referrer_clid=1400";
+        let url =
+            "https://dzen.ru/video/watch/634b04f2596d3e28c83c233e?rid=12345&referrer_clid=1400";
         let sanitized = VideoDownloader::sanitize_url(url);
-        assert_eq!(sanitized, "https://dzen.ru/video/watch/634b04f2596d3e28c83c233e");
+        assert_eq!(
+            sanitized,
+            "https://dzen.ru/video/watch/634b04f2596d3e28c83c233e"
+        );
 
         let url_clean = "https://dzen.ru/video/watch/634b04f2596d3e28c83c233e";
         let sanitized_clean = VideoDownloader::sanitize_url(url_clean);

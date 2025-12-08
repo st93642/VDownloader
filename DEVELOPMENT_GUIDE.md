@@ -215,7 +215,7 @@ async fn search_new_engine(
         "https://newsearch.example.com/search?q={}",
         urlencoding::encode(query)
     );
-    
+
     Self::execute_search_command(
         &search_url,
         &["--dump-json", "--flat-playlist", "--skip-download"],
@@ -620,15 +620,15 @@ use log::{debug, info, warn, error};
 
 pub fn download(&self, url: &str) -> Result<String> {
     info!("Starting download from: {}", url);
-    
+
     self.validate_url(url)?;
     debug!("URL validation passed");
-    
+
     let platform = Self::detect_platform(url);
     info!("Detected platform: {:?}", platform);
-    
+
     // ... actual download ...
-    
+
     info!("Download completed");
     Ok(output)
 }

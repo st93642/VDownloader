@@ -142,8 +142,6 @@ src/
 
 ## Documentation
 
-### For Developers
-
 - **[CODEBASE_INDEX.md](CODEBASE_INDEX.md)** - Project structure and module overview
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design and architecture
 - **[SETUP.md](SETUP.md)** - Development environment setup

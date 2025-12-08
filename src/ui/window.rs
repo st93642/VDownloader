@@ -16,20 +16,8 @@ use crate::core::error::DownloadError;
 use crate::core::search::SearchService;
 use crate::ui::components::search_view::SearchView;
 use gtk4::{
-    prelude::*,
-    Application,
-    ApplicationWindow,
-    Box,
-    Button,
-    CheckButton,
-    Entry,
-    FileDialog,
-    Label,
-    Orientation,
-    ProgressBar,
-    Stack,
-    StackSwitcher,
-    StackTransitionType,
+    prelude::*, Application, ApplicationWindow, Box, Button, CheckButton, Entry, FileDialog, Label,
+    Orientation, ProgressBar, Stack, StackSwitcher, StackTransitionType,
 };
 use log::info;
 use std::cell::RefCell;
@@ -257,8 +245,7 @@ pub fn build_window(app: &Application) -> ApplicationWindow {
             match receiver.try_recv() {
                 Ok(progress) => {
                     progress_bar_clone_updater.set_fraction(progress as f64);
-                    progress_bar_clone_updater
-                        .set_text(Some(&format!("{:.0}%", progress * 100.0)));
+                    progress_bar_clone_updater.set_text(Some(&format!("{:.0}%", progress * 100.0)));
                 }
                 Err(std::sync::mpsc::TryRecvError::Empty) => {
                     return gtk4::glib::ControlFlow::Continue

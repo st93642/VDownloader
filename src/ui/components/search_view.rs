@@ -301,7 +301,7 @@ impl SearchView {
 
         // Preview button
         let preview_button = Button::with_label("Preview");
-        
+
         let result_clone_preview = result.clone();
         let window_clone = window.clone();
         preview_button.connect_clicked(move |_| {
