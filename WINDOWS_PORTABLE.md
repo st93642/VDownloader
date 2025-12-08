@@ -8,9 +8,9 @@ VDownloader now has **two Windows build options**:
    - Requires GTK4 runtime installation
    - Best for developers or users with MSYS2
 
-2. **Portable Build** (`vdownloader-windows-portable.zip`) - ~100-150 MB
+2. **Portable Build** (`vdownloader-windows-portable.zip`) - ~150-200 MB
    - **No installation required**
-   - All dependencies bundled
+   - All dependencies bundled (including ffmpeg)
    - Just extract and run
 
 ## What's Included in Portable Build?
@@ -19,6 +19,7 @@ The portable package includes everything needed to run VDownloader:
 
 - ✅ VDownloader executable
 - ✅ **yt-dlp.exe** (automatically downloaded, latest version)
+- ✅ **ffmpeg.exe** and **ffprobe.exe** (for best video format support)
 - ✅ All GTK4 runtime DLLs (~30 libraries)
 - ✅ GDK PixBuf loaders (for image formats)
 - ✅ GTK4 modules and plugins
@@ -113,7 +114,7 @@ The workflow runs on every push to master.
 | Build Type | Size | Dependencies | Installation |
 |------------|------|--------------|--------------|
 | Standard   | ~4 MB | Requires GTK4 | User must install MSYS2 |
-| Portable   | ~100-150 MB | All bundled | Just extract and run |
+| Portable   | ~150-200 MB | All bundled (with ffmpeg) | Just extract and run |
 
 ## Advantages of Portable Build
 
@@ -146,7 +147,7 @@ Simply replace the `yt-dlp.exe` file in your portable folder to update it indepe
 |--------|-------|---------|-------|
 | Standard Binary | 4 MB | 4 MB | 4 MB |
 | AppImage | 36 MB | N/A | N/A |
-| Portable ZIP | N/A | 100-150 MB | N/A |
+| Portable ZIP | N/A | 150-200 MB | N/A |
 | App Bundle | N/A | N/A | ~10 MB |
 
 ## Building from Source
