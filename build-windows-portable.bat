@@ -61,7 +61,7 @@ if not defined GTK_PATH (
 echo Using GTK4 from: %GTK_PATH%
 echo.
 
-REM Copy required DLLs
+REM Copy all required DLLs (comprehensive list)
 echo Copying GTK4 and dependencies...
 for %%F in (
     libgtk-4-1.dll
@@ -96,6 +96,23 @@ for %%F in (
     libbrotlicommon.dll
     libbrotlidec.dll
     libpixman-1-0.dll
+    libgcc_s_seh-1.dll
+    libstdc++-6.dll
+    libdatrie-1.dll
+    libthai-0.dll
+    libdeflate.dll
+    libsharpyuv-0.dll
+    libwebp-7.dll
+    liblzma-5.dll
+    libzstd.dll
+    libLerc.dll
+    libjbig-0.dll
+    libhwy.dll
+    librsvg-2-2.dll
+    libxml2-2.dll
+    libgdk-3-0.dll
+    libatk-1.0-0.dll
+    libpangoft2-1.0-0.dll
 ) do (
     if exist "%GTK_PATH%\bin\%%F" (
         copy "%GTK_PATH%\bin\%%F" dist\windows-portable\ >nul 2>&1

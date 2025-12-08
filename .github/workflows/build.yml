@@ -122,16 +122,49 @@ jobs:
         echo "Creating portable Windows package..."
         cd dist/windows-portable
         
-        # Copy all required GTK4 DLLs
+        # Function to copy DLL and its dependencies recursively
+        copy_dll_deps() {
+          local dll="$1"
+          local base_dll=$(basename "$dll")
+          
+          # Skip if already copied
+          [ -f "$base_dll" ] && return
+          
+          # Copy the DLL
+          if [ -f "$dll" ]; then
+            cp "$dll" . 2>/dev/null || true
+            echo "  Copied: $base_dll"
+            
+            # Get dependencies using ldd
+            ldd "$dll" 2>/dev/null | grep -i "ucrt64\|mingw64" | awk '{print $3}' | while read dep; do
+              [ -f "$dep" ] && copy_dll_deps "$dep"
+            done
+          fi
+        }
+        
+        # Copy main executable and get all its dependencies
+        echo "Analyzing dependencies of vdownloader.exe..."
+        ldd vdownloader.exe | grep -i "ucrt64\|mingw64" | awk '{print $3}' | while read dll; do
+          if [ -f "$dll" ]; then
+            cp "$dll" . 2>/dev/null || true
+            echo "  Copied: $(basename $dll)"
+          fi
+        done
+        
+        # Ensure critical GTK4 DLLs are present
+        echo "Ensuring GTK4 libraries..."
         for dll in libgtk-4-1.dll libgdk_pixbuf-2.0-0.dll libgio-2.0-0.dll libglib-2.0-0.dll \
                    libgobject-2.0-0.dll libgmodule-2.0-0.dll libcairo-2.dll libcairo-gobject-2.dll \
-                   libpango-1.0-0.dll libpangocairo-1.0-0.dll libpangoft2-1.0-0.dll libpangowin32-1.0-0.dll \
-                   libharfbuzz-0.dll libfontconfig-1.dll libfreetype-6.dll libpng16-16.dll libepoxy-0.dll \
-                   libfribidi-0.dll libgraphene-1.0-0.dll libjpeg-8.dll libtiff-6.dll libintl-8.dll \
-                   libpcre2-8-0.dll libiconv-2.dll libffi-8.dll libwinpthread-1.dll zlib1.dll libbz2-1.dll \
-                   libexpat-1.dll libbrotlicommon.dll libbrotlidec.dll libpixman-1-0.dll; do
-          if [ -f "/ucrt64/bin/$dll" ]; then
-            cp "/ucrt64/bin/$dll" . || true
+                   libpango-1.0-0.dll libpangocairo-1.0-0.dll libharfbuzz-0.dll libfontconfig-1.dll \
+                   libfreetype-6.dll libpng16-16.dll libepoxy-0.dll libfribidi-0.dll libgraphene-1.0-0.dll \
+                   libjpeg-8.dll libtiff-6.dll libintl-8.dll libpcre2-8-0.dll libiconv-2.dll libffi-8.dll \
+                   libwinpthread-1.dll zlib1.dll libbz2-1.dll libexpat-1.dll libbrotlicommon.dll \
+                   libbrotlidec.dll libpixman-1-0.dll libgcc_s_seh-1.dll libstdc++-6.dll \
+                   libdatrie-1.dll libthai-0.dll libdeflate.dll libsharpyuv-0.dll libwebp-7.dll \
+                   liblzma-5.dll libzstd.dll libLerc.dll libjbig-0.dll libhwy.dll; do
+          if [ ! -f "$dll" ] && [ -f "/ucrt64/bin/$dll" ]; then
+            cp "/ucrt64/bin/$dll" . 2>/dev/null || true
+            echo "  Added: $dll"
           fi
         done
         
