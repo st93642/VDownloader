@@ -8,16 +8,19 @@ A modern, cross-platform video downloader with GTK4 interface. Download videos f
 ### For End Users
 
 **Windows (Portable - No Installation):**
+
 1. Download `vdownloader-windows-portable.zip` from [Releases](https://github.com/st93642/VDownloader/releases) or [dist/](dist/)
 2. Extract and run `VDownloader.bat`
 3. Done! Everything is bundled (GTK4 + yt-dlp)
 
 **Linux (AppImage):**
+
 1. Download `VDownloader-linux.AppImage`
 2. Make executable: `chmod +x VDownloader-linux.AppImage`
 3. Run: `./VDownloader-linux.AppImage`
 
 **Linux (Binary):**
+
 ```bash
 # Install GTK4
 sudo apt install libgtk-4-1 yt-dlp  # Ubuntu/Debian
@@ -29,6 +32,7 @@ sudo dnf install gtk4 yt-dlp        # Fedora
 ```
 
 **macOS:**
+
 ```bash
 brew install gtk4 yt-dlp
 ./vdownloader-macos
@@ -37,11 +41,13 @@ brew install gtk4 yt-dlp
 ### For Developers
 
 **Prerequisites:**
+
 - Rust (stable)
 - GTK4 development libraries
 - yt-dlp
 
 **Build:**
+
 ```bash
 git clone https://github.com/st93642/VDownloader.git
 cd VDownloader
@@ -80,16 +86,19 @@ cargo build --release
 ### Prerequisites
 
 **Linux:**
+
 ```bash
 sudo apt install libgtk-4-dev build-essential pkg-config yt-dlp
 ```
 
 **macOS:**
+
 ```bash
 brew install gtk4 yt-dlp
 ```
 
 **Windows:**
+
 ```bash
 # MSYS2 UCRT64
 pacman -S mingw-w64-ucrt-x86_64-gtk4 mingw-w64-ucrt-x86_64-toolchain
@@ -118,7 +127,7 @@ cargo test
 
 ## Project Structure
 
-```
+```text
 src/
 ├── main.rs           # Entry point
 ├── core/             # Business logic (platform-agnostic)

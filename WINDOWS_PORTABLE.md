@@ -30,7 +30,7 @@ The portable package includes everything needed to run VDownloader:
 
 ## How to Use Portable Build
 
-### For End Users:
+### For End Users
 
 1. **Download** `vdownloader-windows-portable.zip` from:
    - GitHub repository: `dist/vdownloader-windows-portable.zip`
@@ -47,7 +47,7 @@ That's it! No installation, no admin rights, no additional downloads required.
 
 **Note**: yt-dlp is automatically included in the package (latest version at build time).
 
-### For Developers:
+### For Developers
 
 Build locally using the provided script:
 
@@ -57,6 +57,7 @@ build-windows-portable.bat
 ```
 
 This will:
+
 - Build the release executable
 - Copy all GTK4 dependencies
 - Create the portable folder structure
@@ -67,6 +68,7 @@ This will:
 ### Bundled Libraries
 
 The portable build includes these essential DLLs:
+
 - GTK4 core libraries
 - Cairo graphics engine
 - Pango text rendering
@@ -77,6 +79,7 @@ The portable build includes these essential DLLs:
 ### Environment Setup
 
 The launcher script (`VDownloader.bat`) automatically:
+
 - Sets PATH to include bundled DLLs
 - Configures GTK data directories
 - Sets GDK PixBuf module paths
@@ -84,7 +87,7 @@ The launcher script (`VDownloader.bat`) automatically:
 
 ### Directory Structure
 
-```
+```text
 windows-portable/
 ├── vdownloader.exe          # Main executable
 ├── VDownloader.bat           # Launcher script
@@ -101,6 +104,7 @@ windows-portable/
 ## Automated Builds
 
 GitHub Actions automatically:
+
 1. Builds both standard and portable versions
 2. Creates the portable ZIP package
 3. Commits both to the repository (`dist/` folder)
@@ -135,9 +139,10 @@ The workflow runs on every push to master.
 `yt-dlp` is now bundled with the portable build! The version included is the latest at build time.
 
 Since yt-dlp updates frequently (weekly) with site compatibility fixes:
+
 - **Automatic**: Each new VDownloader build includes the latest yt-dlp
 - **Manual Update**: You can replace `yt-dlp.exe` with a newer version anytime
-- **Download**: Get latest from https://github.com/yt-dlp/yt-dlp/releases
+- **Download**: Get latest from <https://github.com/yt-dlp/yt-dlp/releases>
 
 Simply replace the `yt-dlp.exe` file in your portable folder to update it independently.
 
@@ -154,13 +159,15 @@ Simply replace the `yt-dlp.exe` file in your portable folder to update it indepe
 
 If you want to build locally:
 
-### Requirements:
+### Requirements
+
 - Windows 10/11
 - MSYS2 with UCRT64 environment
 - Rust toolchain
 - GTK4 development libraries
 
-### Steps:
+### Steps
+
 ```bash
 # Install dependencies
 pacman -S mingw-w64-ucrt-x86_64-gtk4 mingw-w64-ucrt-x86_64-toolchain
@@ -188,21 +195,25 @@ If you want to distribute VDownloader:
 ## Troubleshooting
 
 ### "Application failed to start"
+
 - Ensure you're using `VDownloader.bat` launcher
 - Check that all DLLs are present in the folder
 
 ### Missing icons or themes
+
 - Schemas might not be compiled
 - Run: `glib-compile-schemas.exe share/glib-2.0/schemas`
 
 ### "yt-dlp not found"
+
 - Should not occur (yt-dlp is bundled)
-- If missing, download from https://github.com/yt-dlp/yt-dlp/releases
+- If missing, download from <https://github.com/yt-dlp/yt-dlp/releases>
 - Place in same folder as vdownloader.exe
 
 ## Future Improvements
 
 Potential enhancements for portable build:
+
 - [ ] Auto-download yt-dlp if missing
 - [ ] Include FFmpeg for audio extraction
 - [ ] Create installer wrapper (NSIS/Inno Setup)
@@ -212,6 +223,7 @@ Potential enhancements for portable build:
 ## Questions?
 
 Check the main documentation:
+
 - `BUILD.md` - Build instructions
 - `DISTRIBUTION.md` - Distribution guide
 - `README.md` - Project overview
