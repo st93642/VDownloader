@@ -217,20 +217,6 @@ jobs:
       with:
         name: vdownloader-windows-portable
         path: dist/vdownloader-windows-portable.zip
-    
-    - name: Commit Windows builds to repository
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      shell: msys2 {0}
-      run: |
-        git config --global user.name "GitHub Actions Bot"
-        git config --global user.email "actions@github.com"
-        git add -f dist/vdownloader-windows.exe dist/vdownloader-windows-portable.zip
-        if git diff --staged --quiet; then
-          echo "No changes to Windows builds"
-        else
-          git commit -m "Update Windows builds (built by GitHub Actions)"
-          git push
-        fi
 
   build-macos:
     runs-on: macos-latest
