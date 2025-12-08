@@ -32,7 +32,19 @@ VDownloader is a cross-platform desktop video downloader written in **Rust** usi
 ### 3. Video Extraction & Search
 - **Engine**: Relies on `yt-dlp` CLI being in the system PATH.
 - **Search**: Executes `yt-dlp --dump-json "query"`.
-- **Platform Detection**: Simple string matching in `VideoDownloader::detect_platform` (e.g., `url.contains("youtube.com")`).
+- **Platform Detection**: Simple string matching in `VideoDownloader::detect_platform` (e.
+
+### Error Handling
+- Use `thiserror` for library errors (`DownloadError`, `SearchError`).
+- Log errors with `log::warn!` or `log::error!` before returning `Err`.
+- Do not use `.unwrap()` in production code; use `?` or handle `None`/`Err` explicitly.
+
+### UI Construction
+- Use the **Builder Pattern**: `Button::builder().label("Click").build()`.
+- Use CSS classes for styling: `title-1`, `dim-label`, `monospace`, `suggested-action`.
+
+## Key Files
+- `g., `url.contains("youtube.com")`).
 
 ## Developer Workflow
 
@@ -47,20 +59,6 @@ VDownloader is a cross-platform desktop video downloader written in **Rust** usi
 ### Testing
 - `cargo test` (Runs unit tests in `src/core`).
 - `cargo test -- --nocapture` to see logs during tests.
-
-## Coding Conventions
-
-### File Headers
-All source files MUST start with the TSI header format:
-```rust
-/*****************************************************************************/
-/*  filename.rs                                      TTTTTTTT SSSSSSS II    */
-/*  By: st93642@students.tsi.lv                        TT    SSSSSSS II    */
-/*  Created: Dec 07 2025 HH:MM st93642                 TT    SSSSSSS II    */
-/*  Updated: [Current Date]                                                 */
-/*   Transport and Telecommunication Institute - Riga, Latvia                */
-/*****************************************************************************/
-```
 
 ### Error Handling
 - Use `thiserror` for library errors (`DownloadError`, `SearchError`).
