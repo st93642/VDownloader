@@ -69,6 +69,7 @@ jobs:
           mingw-w64-ucrt-x86_64-gtk4
           mingw-w64-ucrt-x86_64-toolchain
           mingw-w64-ucrt-x86_64-pkgconf
+          zip
     
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
