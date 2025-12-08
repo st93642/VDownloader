@@ -107,6 +107,14 @@ jobs:
         cp target/x86_64-pc-windows-gnu/release/vdownloader.exe dist/windows-portable/vdownloader.exe
         cp target/x86_64-pc-windows-gnu/release/vdownloader.exe dist/vdownloader-windows.exe
     
+    - name: Download yt-dlp
+      shell: msys2 {0}
+      run: |
+        echo "Downloading yt-dlp..."
+        curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o dist/windows-portable/yt-dlp.exe
+        chmod +x dist/windows-portable/yt-dlp.exe
+        echo "✓ yt-dlp downloaded successfully"
+    
     - name: Bundle Windows portable package
       shell: msys2 {0}
       run: |
@@ -153,19 +161,20 @@ jobs:
         VDownloader - Portable Windows Version
         ========================================
         
-        This is a portable version that includes all GTK4 dependencies.
+        This is a fully portable version with all dependencies included!
         
         To run:
           1. Double-click VDownloader.bat (recommended)
           OR
           2. Double-click vdownloader.exe directly
         
-        Requirements:
-          - yt-dlp (download from https://github.com/yt-dlp/yt-dlp)
-          - Place yt-dlp.exe in the same folder or add to PATH
+        Included:
+          ✓ VDownloader application
+          ✓ GTK4 runtime libraries
+          ✓ yt-dlp (video downloader)
+          ✓ Icon themes and schemas
         
-        The package includes all GTK4 runtime libraries, icon themes, and schemas.
-        No additional installation required!
+        No installation required - just extract and run!
         
         EOF
         

@@ -18,6 +18,7 @@ VDownloader now has **two Windows build options**:
 The portable package includes everything needed to run VDownloader:
 
 - ✅ VDownloader executable
+- ✅ **yt-dlp.exe** (automatically downloaded, latest version)
 - ✅ All GTK4 runtime DLLs (~30 libraries)
 - ✅ GDK PixBuf loaders (for image formats)
 - ✅ GTK4 modules and plugins
@@ -37,15 +38,13 @@ The portable package includes everything needed to run VDownloader:
 
 2. **Extract** the ZIP file to any folder
 
-3. **Download yt-dlp.exe**:
-   - Get it from: https://github.com/yt-dlp/yt-dlp/releases
-   - Place `yt-dlp.exe` in the extracted folder
-
-4. **Run** the application:
+3. **Run** the application:
    - Double-click `VDownloader.bat` (recommended)
    - OR double-click `vdownloader.exe` directly
 
-That's it! No installation, no admin rights required.
+That's it! No installation, no admin rights, no additional downloads required.
+
+**Note**: yt-dlp is automatically included in the package (latest version at build time).
 
 ### For Developers:
 
@@ -119,24 +118,27 @@ The workflow runs on every push to master.
 ## Advantages of Portable Build
 
 ✅ **Zero Installation** - No admin rights needed  
-✅ **Self-Contained** - All dependencies included  
+✅ **Fully Self-Contained** - All dependencies AND yt-dlp included  
 ✅ **Portable** - Run from USB drive or any folder  
 ✅ **User-Friendly** - Simple extract-and-run experience  
 ✅ **Offline** - No internet needed after download  
+✅ **Always Latest** - yt-dlp version from build time
 
 ## Trade-offs
 
 ⚠️ **Larger Download** - ~25-35x bigger than standard build  
-⚠️ **Not Truly Standalone** - Still requires yt-dlp.exe  
+⚠️ **yt-dlp Updates** - Bundled version may become outdated (update manually if needed)
 
-## Why Not Bundle yt-dlp?
+## yt-dlp Updates
 
-`yt-dlp` updates frequently (weekly) with site compatibility fixes. Bundling it would:
-- Require frequent rebuilds
-- Make the package even larger
-- Prevent users from updating yt-dlp independently
+`yt-dlp` is now bundled with the portable build! The version included is the latest at build time.
 
-We keep it separate so users can update it easily without waiting for a new VDownloader release.
+Since yt-dlp updates frequently (weekly) with site compatibility fixes:
+- **Automatic**: Each new VDownloader build includes the latest yt-dlp
+- **Manual Update**: You can replace `yt-dlp.exe` with a newer version anytime
+- **Download**: Get latest from https://github.com/yt-dlp/yt-dlp/releases
+
+Simply replace the `yt-dlp.exe` file in your portable folder to update it independently.
 
 ## Comparison with Other Formats
 
@@ -174,17 +176,12 @@ If you want to distribute VDownloader:
 
 1. **Choose the right build**:
    - Standard: For tech-savvy users
-   - Portable: For general audience
+   - Portable: For general audience (recommended - includes yt-dlp)
 
-2. **Include yt-dlp**:
-   - Download latest yt-dlp.exe
-   - Place in the portable folder
-   - Mention it in your distribution notes
-
-3. **Repackaging**:
+2. **Repackaging**:
    - You can repackage the portable build
-   - Include yt-dlp if desired
-   - Add your own launcher/installer
+   - yt-dlp is already included
+   - Add your own launcher/installer if desired
    - Credit original project
 
 ## Troubleshooting
@@ -198,9 +195,9 @@ If you want to distribute VDownloader:
 - Run: `glib-compile-schemas.exe share/glib-2.0/schemas`
 
 ### "yt-dlp not found"
-- Download yt-dlp.exe
+- Should not occur (yt-dlp is bundled)
+- If missing, download from https://github.com/yt-dlp/yt-dlp/releases
 - Place in same folder as vdownloader.exe
-- Or add to system PATH
 
 ## Future Improvements
 

@@ -37,6 +37,16 @@ REM Copy executable
 echo Copying executable...
 copy target\release\vdownloader.exe dist\windows-portable\vdownloader.exe
 
+REM Download yt-dlp
+echo.
+echo Downloading yt-dlp...
+curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o dist\windows-portable\yt-dlp.exe
+if %ERRORLEVEL% EQU 0 (
+    echo yt-dlp downloaded successfully
+) else (
+    echo Warning: Failed to download yt-dlp
+)
+
 REM Find MSYS2 GTK4 path (common locations)
 set "GTK_PATH="
 if exist "C:\msys64\ucrt64" set "GTK_PATH=C:\msys64\ucrt64"
@@ -137,21 +147,20 @@ echo Creating README...
 echo VDownloader - Portable Windows Version
 echo ========================================
 echo.
-echo This is a portable version that includes all dependencies.
+echo This is a fully portable version with all dependencies included!
 echo.
 echo To run:
-echo   1. Double-click VDownloader.bat
+echo   1. Double-click VDownloader.bat ^(recommended^)
 echo   OR
 echo   2. Double-click vdownloader.exe directly
 echo.
-echo Requirements:
-echo   - yt-dlp ^(download from https://github.com/yt-dlp/yt-dlp^)
-echo   - Place yt-dlp.exe in the same folder or add to PATH
+echo Included:
+echo   * VDownloader application
+echo   * GTK4 runtime libraries
+echo   * yt-dlp ^(video downloader^)
+echo   * Icon themes and schemas
 echo.
-echo The package includes:
-echo   - VDownloader executable
-echo   - All GTK4 runtime libraries
-echo   - Icon themes and schemas
+echo No installation required - just extract and run!
 echo.
 echo Total size: ~100-150 MB
 echo.

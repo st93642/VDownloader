@@ -19,14 +19,14 @@ This directory contains Windows builds automatically created by GitHub Actions.
 
 ### 2. `vdownloader-windows-portable.zip` (Portable Build)
 - **Size**: ~100-150 MB
-- **Requirements**: Only yt-dlp needed
-- **Best for**: Users who want no installation hassle
-- **Includes**: All GTK4 DLLs, icon themes, and schemas bundled
+- **Requirements**: NONE - everything included!
+- **Best for**: Users who want zero installation
+- **Includes**: All GTK4 DLLs, icon themes, schemas, AND yt-dlp
 
 **To run:**
 1. Extract the ZIP file
-2. Download yt-dlp.exe and place in the extracted folder
-3. Run `VDownloader.bat` or `vdownloader.exe`
+2. Run `VDownloader.bat` or `vdownloader.exe`
+3. That's it!
 
 ## Platform
 
