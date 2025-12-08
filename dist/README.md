@@ -5,25 +5,31 @@ This directory contains Windows builds automatically created by GitHub Actions.
 ## Files
 
 ### 1. `vdownloader-windows.exe` (Standard Build)
+
 - **Size**: ~4 MB
 - **Requirements**: Requires GTK4 runtime to be installed separately
 - **Best for**: Users who already have MSYS2/GTK4 installed
 
 **To run:**
+
 1. Install GTK4 via MSYS2:
+
    ```bash
    pacman -S mingw-w64-ucrt-x86_64-gtk4
    ```
+
 2. Install yt-dlp from [releases](https://github.com/yt-dlp/yt-dlp/releases)
 3. Run `vdownloader-windows.exe`
 
 ### 2. `vdownloader-windows-portable.zip` (Portable Build)
+
 - **Size**: ~150-200 MB
 - **Requirements**: NONE - everything included!
 - **Best for**: Users who want zero installation
 - **Includes**: All GTK4 DLLs, icon themes, schemas, yt-dlp, AND ffmpeg
 
 **To run:**
+
 1. Extract the ZIP file
 2. Run `VDownloader.bat` or `vdownloader.exe`
 3. That's it!

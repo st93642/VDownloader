@@ -8,18 +8,19 @@ VDownloader now has **two Windows build options**:
    - Requires GTK4 runtime installation
    - Best for developers or users with MSYS2
 
-2. **Portable Build** (`vdownloader-windows-portable.zip`) - ~150-200 MB
+1. **Portable Build** (`vdownloader-windows-portable.zip`) - ~150-200 MB
    - **No installation required**
    - All dependencies bundled (including ffmpeg)
    - Just extract and run
 
-## What's Included in Portable Build?
+## What's Included in Portable Build
 
 The portable package includes everything needed to run VDownloader:
 
 - ✅ VDownloader executable
 - ✅ **yt-dlp.exe** (automatically downloaded, latest version)
-- ✅ **ffmpeg.exe** and **ffprobe.exe** (for best video format support)
+- ✅ **ffmpeg.exe** and **ffprobe.exe**
+   (for best video format support)
 - ✅ All GTK4 runtime DLLs (~30 libraries)
 - ✅ GDK PixBuf loaders (for image formats)
 - ✅ GTK4 modules and plugins
@@ -37,15 +38,17 @@ The portable package includes everything needed to run VDownloader:
    - GitHub Actions artifacts
    - Release page (for tagged versions)
 
-2. **Extract** the ZIP file to any folder
+1. **Extract** the ZIP file to any folder
 
-3. **Run** the application:
+1. **Run** the application:
    - Double-click `VDownloader.bat` (recommended)
    - OR double-click `vdownloader.exe` directly
 
-That's it! No installation, no admin rights, no additional downloads required.
+That's it! No installation, no admin rights, no additional downloads
+required.
 
-**Note**: yt-dlp is automatically included in the package (latest version at build time).
+**Note**: yt-dlp is automatically included in the package (latest version at
+build time).
 
 ### For Developers
 
@@ -106,10 +109,10 @@ windows-portable/
 GitHub Actions automatically:
 
 1. Builds both standard and portable versions
-2. Creates the portable ZIP package
-3. Commits both to the repository (`dist/` folder)
-4. Makes them available as artifacts
-5. Includes in releases (for version tags)
+1. Creates the portable ZIP package
+1. Commits both to the repository (`dist/` folder)
+1. Makes them available as artifacts
+1. Includes in releases (for version tags)
 
 The workflow runs on every push to master.
 
@@ -136,7 +139,8 @@ The workflow runs on every push to master.
 
 ## yt-dlp Updates
 
-`yt-dlp` is now bundled with the portable build! The version included is the latest at build time.
+`yt-dlp` is now bundled with the portable build!
+The version included is the latest at build time.
 
 Since yt-dlp updates frequently (weekly) with site compatibility fixes:
 
@@ -176,7 +180,8 @@ pacman -S mingw-w64-ucrt-x86_64-gtk4 mingw-w64-ucrt-x86_64-toolchain
 build-windows-portable.bat
 ```
 
-The script will create `dist/windows-portable/` with all files and optionally create a ZIP if 7-Zip is installed.
+The script will create `dist/windows-portable/` with all files and optionally
+create a ZIP if 7-Zip is installed.
 
 ## For Distributors
 
@@ -186,7 +191,7 @@ If you want to distribute VDownloader:
    - Standard: For tech-savvy users
    - Portable: For general audience (recommended - includes yt-dlp)
 
-2. **Repackaging**:
+1. **Repackaging**:
    - You can repackage the portable build
    - yt-dlp is already included
    - Add your own launcher/installer if desired
@@ -220,7 +225,7 @@ Potential enhancements for portable build:
 - [ ] Code signing for Windows SmartScreen
 - [ ] Reduce size with MinGW dependencies instead of UCRT64
 
-## Questions?
+## Questions
 
 Check the main documentation:
 

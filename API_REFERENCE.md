@@ -2,15 +2,17 @@
 
 Complete reference for all public APIs and modules in VDownloader.
 
-Note: VDownloader is a desktop application, not a web service. This document describes the public Rust APIs that can be used by other code or extensions.
+Note: VDownloader is a desktop application, not a web service.
+This document describes the public Rust APIs that can be used by other code or
+extensions.
 
 ## Table of Contents
 
 1. [Core Module (core/)](#core-module)
-2. [UI Module (ui/)](#ui-module)
-3. [Error Types](#error-types)
-4. [Types and Enums](#types-and-enums)
-5. [Common Usage Examples](#common-usage-examples)
+1. [UI Module (ui/)](#ui-module)
+1. [Error Types](#error-types)
+1. [Types and Enums](#types-and-enums)
+1. [Common Usage Examples](#common-usage-examples)
 
 ## Core Module
 
@@ -74,7 +76,7 @@ pub struct DownloadRequest {
 
 **Fields**:
 
-- `url: String` - Video URL (must start with http:// or https://)
+- `url: String` - Video URL (must start with `http://` or `https://`)
 - `platform: Platform` - Platform (auto-detected via `Platform::detect_platform()`)
 - `output_path: Option<String>` - Output directory path (defaults to current directory)
 - `overwrite: bool` - Whether to overwrite existing files (default: false)
@@ -376,7 +378,7 @@ let search = SearchService::new(10);
 assert_eq!(search.default_limit(), 10);
 ```
 
-##### `async fn search(&self, query: &str, limit: Option<u32>) -> Result<Vec<SearchResult>, SearchError>`
+##### `async fn search(&self, query, limit)`
 
 Search for videos.
 
@@ -654,11 +656,11 @@ Main application window.
 pub fn build_window(app: &Application) -> ApplicationWindow;
 ```
 
-**Function**:
-
-##### `build_window(app: &Application) -> ApplicationWindow`
+#### `build_window(app: &Application) -> ApplicationWindow`
 
 Build and return the main application window.
+
+**Function**:
 
 **Parameters**:
 
@@ -686,15 +688,15 @@ impl SearchView {
 }
 ```
 
-**Methods**:
+#### SearchView Methods
 
-##### `new() -> Self`
+#### `SearchView::new() -> Self`
 
 Create a new search view component.
 
 **Returns**: `SearchView` instance
 
-##### `container(&self) -> &gtk4::Box`
+#### `container(&self) -> &gtk4::Box`
 
 Get the container widget for adding to UI.
 
@@ -707,8 +709,8 @@ Register callback for download button clicks.
 **Parameters**:
 
 - `callback: F` - Closure called when user clicks Download on a result
-  - Takes `SearchResult` as parameter
-  - Called from GTK signal context
+        - Takes `SearchResult` as parameter
+        - Called from GTK signal context
 
 **Example**:
 

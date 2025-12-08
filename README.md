@@ -1,7 +1,8 @@
 
 # VDownloader
 
-A modern, cross-platform video downloader with GTK4 interface. Download videos from YouTube, TikTok, X, VK, Rutube, Reddit, Dzen, and more.
+A modern, cross-platform video downloader with GTK4 interface.
+Download videos from YouTube, TikTok, X, VK, Rutube, Reddit, Dzen, and more.
 
 ## Quick Start
 
@@ -9,15 +10,16 @@ A modern, cross-platform video downloader with GTK4 interface. Download videos f
 
 **Windows (Portable - No Installation):**
 
-1. Download `vdownloader-windows-portable.zip` from [Releases](https://github.com/st93642/VDownloader/releases) or [dist/](dist/)
-2. Extract and run `VDownloader.bat`
-3. Done! Everything is bundled (GTK4 + yt-dlp)
+1. Download `vdownloader-windows-portable.zip` from
+    [Releases](https://github.com/st93642/VDownloader/releases) or [dist/](dist/)
+1. Extract and run `VDownloader.bat`
+1. Done! Everything is bundled (GTK4 + yt-dlp)
 
 **Linux (AppImage):**
 
 1. Download `VDownloader-linux.AppImage`
-2. Make executable: `chmod +x VDownloader-linux.AppImage`
-3. Run: `./VDownloader-linux.AppImage`
+1. Make executable: `chmod +x VDownloader-linux.AppImage`
+1. Run: `./VDownloader-linux.AppImage`
 
 **Linux (Binary):**
 
@@ -74,7 +76,7 @@ cargo build --release
 ## Distribution Formats
 
 | Platform | Format | Size | Dependencies |
-|----------|--------|------|--------------|
+|---|---|---|---|
 | Windows | Portable ZIP | ~150 MB | None (all bundled) |
 | Windows | Standard EXE | ~4 MB | GTK4 + yt-dlp |
 | Linux | AppImage | ~36 MB | None (all bundled) |
@@ -156,8 +158,10 @@ src/
 
 ## Downloads
 
-- **Releases**: [GitHub Releases](https://github.com/st93642/VDownloader/releases)
-- **Latest Builds**: [dist/](dist/) (auto-updated by CI)
+- **Releases**:
+    [GitHub Releases](https://github.com/st93642/VDownloader/releases)
+- **Latest Builds**:
+    [dist/](dist/) (auto-updated by CI)
 
 ## Troubleshooting
 

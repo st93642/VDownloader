@@ -9,15 +9,23 @@ Guide for developers who want to understand, modify, and extend VDownloader.
 VDownloader is organized into two main layers:
 
 **Core Layer** (`src/core/`):
+
 - Business logic independent of UI framework
+
 - Video downloading, searching, queue management
+
 - Error handling
+
 - Platform detection
 
 **UI Layer** (`src/ui/`):
+
 - GTK4-based user interface
+
 - Components and widgets
+
 - Signal handling and callbacks
+
 - Display of information
 
 Read [CODEBASE_INDEX.md](CODEBASE_INDEX.md) for detailed module overview.
@@ -25,8 +33,11 @@ Read [CODEBASE_INDEX.md](CODEBASE_INDEX.md) for detailed module overview.
 ### 2. Understand the Architecture
 
 VDownloader follows a layered architecture:
+
 - UI → calls → Core services
+
 - Core → calls → yt-dlp and external APIs
+
 - No circular dependencies
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design patterns.
@@ -34,9 +45,13 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design patterns.
 ### 3. Set Up Development Environment
 
 Follow [SETUP.md](SETUP.md) for:
+
 - Prerequisites (Rust, GTK4, yt-dlp)
+
 - Installation steps
+
 - Building the project
+
 - Running tests
 
 ## Common Development Tasks
@@ -50,7 +65,9 @@ Example: Add support for "NewVideo" platform at newvideo.com
 Edit `src/core/downloader.rs`:
 
 ```rust
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+
 pub enum Platform {
     YouTube,
     TikTok,
@@ -63,6 +80,7 @@ pub enum Platform {
     NewVideo,  // Add here
     Other,
 }
+
 ```
 
 #### Step 2: Update Platform Detection
@@ -86,6 +104,7 @@ pub fn detect_platform(url: &str) -> Platform {
         Platform::Other
     }
 }
+
 ```
 
 #### Step 3: Update Search Platform Detection
@@ -102,6 +121,7 @@ fn platform_from_hint(extractor: &str) -> Platform {
         _ => Platform::Other,
     }
 }
+
 ```
 
 #### Step 4: Add Tests
@@ -109,7 +129,9 @@ fn platform_from_hint(extractor: &str) -> Platform {
 Edit `src/core/downloader.rs`, add test in `tests` module:
 
 ```rust
+
 #[cfg(test)]
+
 mod tests {
     use super::*;
 
@@ -129,32 +151,44 @@ mod tests {
         );
     }
 }
+
 ```
 
 #### Step 5: Test Your Changes
 
 ```bash
+
 # Run your new tests
+
 cargo test test_detect_newvideo
 
 # Run all tests to ensure you didn't break anything
+
 cargo test
 
 # Format and lint
+
 cargo fmt
 cargo clippy
+
 ```
 
 #### Step 6: Verify With Real Videos
 
 ```bash
+
 # Try downloading from the new platform
+
 RUST_LOG=info cargo run
 
 # In the UI:
+
 # 1. Enter a URL from newvideo.com
+
 # 2. Select output directory
+
 # 3. Click Download
+
 ```
 
 That's it! yt-dlp will automatically handle the platform. No downloader changes needed.
@@ -200,6 +234,7 @@ pub async fn search(
 
     // ... rest of aggregation ...
 }
+
 ```
 
 #### Step 2: Implement Search Function
@@ -223,18 +258,25 @@ async fn search_new_engine(
     )
     .await
 }
+
 ```
 
 #### Step 3: Test Search
 
 ```bash
+
 # Run the application
+
 RUST_LOG=debug cargo run
 
 # In the UI:
+
 # 1. Go to Search tab
+
 # 2. Enter a search query
+
 # 3. Check if results include items from the new engine
+
 ```
 
 ### Modifying the UI
@@ -244,8 +286,11 @@ Example: Add a "Open in Browser" button to search results
 #### Step 1: Understand Current UI
 
 Review `src/ui/components/search_view.rs`:
+
 - How SearchResult cards are built
+
 - How buttons are added
+
 - How callbacks work
 
 #### Step 2: Add Button to Result Card
@@ -279,16 +324,21 @@ browser_button.connect_clicked(move |_| {
 // Add to card
 button_box.append(&download_button);
 button_box.append(&browser_button);
+
 ```
 
 #### Step 3: Test UI Change
 
 ```bash
+
 # Build and run
+
 cargo run
 
 # Verify the new button appears in search results
+
 # Click it to test opening URLs in browser
+
 ```
 
 ### Adding a New UI Component
@@ -329,6 +379,7 @@ impl HistoryView {
         &self.container
     }
 }
+
 ```
 
 #### Step 2: Register Component Module
@@ -340,6 +391,7 @@ pub mod download_queue;
 pub mod history;  // Add here
 pub mod preview_window;
 pub mod search_view;
+
 ```
 
 #### Step 3: Add to Main Window
@@ -358,6 +410,7 @@ content_stack.add_titled(
     Some("history"),
     "History"
 );
+
 ```
 
 #### Step 4: Test Component
@@ -366,7 +419,9 @@ content_stack.add_titled(
 cargo run
 
 # Verify the new History tab appears
+
 # Check that it renders correctly
+
 ```
 
 ### Fixing a Bug
@@ -377,16 +432,23 @@ Example: Search results showing duplicate titles
 
 ```bash
 cargo run
+
 # Go to Search tab
+
 # Enter a query
+
 # Look for duplicates
+
 ```
 
 #### Step 2: Locate the Issue
 
 Based on symptoms, check:
+
 - `src/core/search.rs` - Search result aggregation
+
 - `src/ui/components/search_view.rs` - Result display
+
 - yt-dlp output parsing
 
 #### Step 3: Add a Test
@@ -394,7 +456,9 @@ Based on symptoms, check:
 In the relevant module, add `#[cfg(test)]` test:
 
 ```rust
+
 #[cfg(test)]
+
 mod tests {
     use super::*;
 
@@ -403,6 +467,7 @@ mod tests {
         // Test that aggregation doesn't duplicate results
     }
 }
+
 ```
 
 #### Step 4: Fix the Bug
@@ -415,7 +480,9 @@ Make minimal code changes to fix the issue.
 cargo test test_search_no_duplicates
 
 # Also test manually
+
 cargo run
+
 ```
 
 ### Optimizing Performance
@@ -423,28 +490,37 @@ cargo run
 #### Profiling Downloads
 
 ```bash
+
 # Run with logging to see timing
+
 RUST_LOG=debug cargo run
 
 # Watch for slow operations in logs
+
 ```
 
 #### Profiling Searches
 
 Search performance depends on:
+
 1. yt-dlp execution time (can't optimize much)
-2. JSON parsing (already streaming)
-3. Thumbnail loading (already asynchronous)
+1. JSON parsing (already streaming)
+1. Thumbnail loading (already asynchronous)
 
 #### Memory Usage
 
 Check memory with system tools:
+
 ```bash
+
 # Linux
+
 watch -n 1 'ps aux | grep vdownloader'
 
 # Check heap size
+
 valgrind --tool=massif ./target/release/vdownloader
+
 ```
 
 ### Writing Tests
@@ -456,7 +532,9 @@ VDownloader uses standard Rust testing patterns.
 In `src/core/downloader.rs`:
 
 ```rust
+
 #[cfg(test)]
+
 mod tests {
     use super::*;
 
@@ -475,6 +553,7 @@ mod tests {
         }
     }
 }
+
 ```
 
 #### Async Test Example
@@ -482,7 +561,9 @@ mod tests {
 In `src/core/search.rs`:
 
 ```rust
+
 #[cfg(test)]
+
 mod tests {
     use super::*;
 
@@ -503,25 +584,33 @@ mod tests {
         }
     }
 }
+
 ```
 
 #### Running Tests
 
 ```bash
+
 # Run all tests
+
 cargo test
 
 # Run with output
+
 cargo test -- --nocapture
 
 # Run specific test
+
 cargo test test_validate_valid_url
 
 # Run tests in debug mode (faster compilation)
+
 cargo test
 
 # Run tests in release mode (slower build, faster execution)
+
 cargo test --release
+
 ```
 
 ## Code Style and Conventions
@@ -533,15 +622,21 @@ Always format code with `cargo fmt`:
 ```bash
 cargo fmt
 cargo fmt --check  # Check without modifying
+
 ```
 
 ### Naming Conventions
 
 Follow Rust standards:
+
 - **Modules**: `snake_case` (e.g., `download_queue.rs`)
+
 - **Functions**: `snake_case` (e.g., `pub fn download_video()`)
+
 - **Types/Structs**: `PascalCase` (e.g., `struct VideoDownloader`)
+
 - **Constants**: `SCREAMING_SNAKE_CASE` (e.g., `const APP_ID: &str = "..."`)
+
 - **Variables**: `snake_case` (e.g., `let output_dir = "..."`)
 
 ### Comments
@@ -554,6 +649,7 @@ let limit = limit.max(1);  // Ensure minimum 1 result
 
 // Bad: Explains what
 let limit = limit.max(1);  // Set limit to max of limit and 1
+
 ```
 
 ### Error Handling
@@ -576,6 +672,7 @@ pub fn download(&self, url: &str) -> String {
     }
     // ...
 }
+
 ```
 
 ### Async Code
@@ -594,6 +691,7 @@ pub fn search(&self, query: &str) -> Result<Vec<SearchResult>> {
     let output = std::process::Command::new("yt-dlp").output()?;  // Blocks!
     Ok(parse_output(&output))
 }
+
 ```
 
 ### GTK4 Specifics
@@ -607,6 +705,7 @@ let container = gtk4::Box::new(Orientation::Vertical, 12);
 // Avoid: Can be ambiguous
 use gtk4::Box;
 let container = Box::new(Orientation::Vertical, 12);  // Which Box?
+
 ```
 
 ## Debugging Tips
@@ -632,11 +731,14 @@ pub fn download(&self, url: &str) -> Result<String> {
     info!("Download completed");
     Ok(output)
 }
+
 ```
 
 Run with logging:
+
 ```bash
 RUST_LOG=debug cargo run
+
 ```
 
 ### Inspecting State
@@ -644,13 +746,16 @@ RUST_LOG=debug cargo run
 Print state when debugging:
 
 ```rust
+
 #[derive(Debug)]
+
 struct MyStruct {
     field: String,
 }
 
 let obj = MyStruct { field: "value".to_string() };
 dbg!(obj);  // Prints: [src/file.rs:123] obj = MyStruct { field: "value" }
+
 ```
 
 ### Stack Traces
@@ -659,6 +764,7 @@ Get full stack trace on panic:
 
 ```bash
 RUST_BACKTRACE=full cargo run
+
 ```
 
 ## Common Patterns
@@ -675,6 +781,7 @@ button.connect_clicked(move |_| {
     let mut map = state_clone.borrow_mut();
     map.insert("key", "value");
 });
+
 ```
 
 ### Thread-Safe State in Core Layer
@@ -691,6 +798,7 @@ tokio::spawn({
         map.insert("key", "value");
     }
 });
+
 ```
 
 ### Error Propagation
@@ -703,6 +811,7 @@ pub async fn process(&self) -> Result<Output, MyError> {
     let data = parse_response(&response)?;
     Ok(data)
 }
+
 ```
 
 ### Async Closures in GTK
@@ -716,48 +825,73 @@ button.connect_clicked(|_| {
         // Update UI with result
     });
 });
+
 ```
 
 ## Performance Tips
 
 ### Build Time
+
 - Use debug build for development: `cargo build`
+
 - Use release only when needed: `cargo build --release`
+
 - Use `cargo check` for fast validation without compilation
+
 - Use faster linker on Linux: `mold`
 
 ### Runtime
+
 - Release build is optimized: `cargo build --release`
+
 - Async operations are non-blocking: uses Tokio
+
 - Thumbnail cache reduces network requests
+
 - JSON parsing is streaming: doesn't load full output
 
 ### Binary Size
+
 - Release build is stripped of debug symbols
+
 - Binary compression with UPX if needed
+
 - Optimize-for-size profile in Cargo.toml
 
 ## Getting Help
 
 ### Read Documentation
+
 - [CODEBASE_INDEX.md](CODEBASE_INDEX.md) - What files exist
+
 - [ARCHITECTURE.md](ARCHITECTURE.md) - How things work
+
 - [SETUP.md](SETUP.md) - How to build
+
 - [README.md](README.md) - Overview
+
 - `cargo doc --open` - API documentation
 
 ### Run Tests
+
 - `cargo test` - Verify your changes don't break existing functionality
+
 - `cargo test -- --nocapture` - See test output
 
 ### Check Code Quality
+
 - `cargo fmt` - Format your code
+
 - `cargo clippy` - Get suggestions
+
 - `cargo test` - Run tests
 
 ### Look at Examples
+
 - Search for similar code in the codebase
+
 - Check `#[cfg(test)]` modules for usage examples
+
 - Review git history: `git log -p --follow filename`
 
 ## Before Submitting Changes
@@ -765,27 +899,36 @@ button.connect_clicked(|_| {
 Checklist before committing:
 
 - [ ] Code compiles: `cargo build`
+
 - [ ] Tests pass: `cargo test`
+
 - [ ] Code formatted: `cargo fmt`
+
 - [ ] No clippy warnings: `cargo clippy`
+
 - [ ] Commit message is clear and descriptive
+
 - [ ] No debug print statements left
+
 - [ ] Documentation is updated if needed
 
 Quick verification:
+
 ```bash
 cargo fmt && cargo clippy && cargo test && cargo build --release
+
 ```
 
 ## Summary
 
 | Task | Files | Key Concept |
 |------|-------|------------|
-| Add platform | `downloader.rs`, `search.rs` | Update enum + detection functions |
+| Add platform | `downloader.rs`, `search.rs` | Update enum/detection |
 | Add feature | `core/*.rs` | Implement service, add tests |
 | Add UI component | `ui/components/*.rs` | Create widget struct, integrate |
 | Fix bug | Locate in relevant module | Add test, fix, verify |
 | Improve performance | Profile first, then optimize | Measure impact |
 | Add test | Same file as code | `#[cfg(test)]` modules |
 
-Questions? Check [CODEBASE_INDEX.md](CODEBASE_INDEX.md), [ARCHITECTURE.md](ARCHITECTURE.md), or open an issue!
+Questions? Check [CODEBASE_INDEX.md](CODEBASE_INDEX.md),
+[ARCHITECTURE.md](ARCHITECTURE.md), or open an issue!

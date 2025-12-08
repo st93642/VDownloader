@@ -1,12 +1,14 @@
 # VDownloader Architecture
 
-Comprehensive guide to VDownloader's system design, layered architecture, and data flow.
+Comprehensive guide to VDownloader's system design, layered architecture,
+and data flow.
 
 ## Architecture Overview
 
-VDownloader follows a **layered architecture** separating presentation concerns from business logic:
+VDownloader follows a **layered architecture** separating presentation
+concerns from business logic:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                    User Interface (GTK4)                │
 │  ┌──────────────────────────────────────────────────┐  │
@@ -59,7 +61,9 @@ VDownloader follows a **layered architecture** separating presentation concerns 
 
 **Location**: `src/ui/`
 
-The UI layer handles all user interaction and display logic using GTK4. It is platform-independent in terms of video downloading logic but GTK4-specific for presentation.
+The UI layer handles all user interaction and display logic using GTK4.
+It is platform-independent for video downloading logic but GTK4-specific for
+presentation.
 
 **Components**:
 
@@ -87,7 +91,8 @@ The UI layer handles all user interaction and display logic using GTK4. It is pl
 
 **Location**: `src/core/`
 
-The core layer contains all business logic independent of the UI framework. It can be tested, documented, and reused without GTK dependencies.
+The core layer contains all business logic independent of the UI framework.
+It can be tested, documented, and reused without GTK dependencies.
 
 **Services**:
 
@@ -109,7 +114,7 @@ The core layer contains all business logic independent of the UI framework. It c
 
 - No UI dependencies (no GTK4 imports)
 - Async-first design using Tokio
-- Thread-safe state using Arc<RwLock<T>>
+- Thread-safe state using `Arc<RwLock<T>>`
 - All errors implement Clone trait
 
 ### Layer 3: External Tools & APIs
@@ -131,7 +136,7 @@ The core layer contains all business logic independent of the UI framework. It c
 
 ### Download Flow
 
-```
+```text
 User Input (URL + Directory)
             │
             ▼
@@ -186,7 +191,7 @@ User Input (URL + Directory)
 
 ### Search Flow
 
-```
+```text
 User Query Input
             │
             ▼
@@ -248,7 +253,7 @@ User Query Input
 
 ### Dependency Graph
 
-```
+```text
 main.rs
   │
   ├─→ ui/window.rs
@@ -284,7 +289,7 @@ main.rs
 
 ### Download Request Processing
 
-```
+```text
 HTTP/User Request
         │
         ▼
@@ -307,7 +312,7 @@ HTTP/User Request
 
 ### Search Request Processing
 
-```
+```text
 SearchRequest { query, limit }
         │
         ▼
@@ -358,7 +363,7 @@ SearchRequest { query, limit }
 
 ### Error Flow
 
-```
+```text
 yt-dlp Command Execution
             │
     ┌───────┴────────┐
@@ -486,9 +491,9 @@ fn platform_from_hint(extractor: &str) -> Platform {
 ### Fallback Chain
 
 1. yt-dlp `extractor` field (if from search)
-2. yt-dlp `extractor_key` field (if from search)
-3. URL pattern detection via `detect_platform()`
-4. Default to `Platform::Other`
+1. yt-dlp `extractor_key` field (if from search)
+1. URL pattern detection via `detect_platform()`
+1. Default to `Platform::Other`
 
 ## Integration Points
 
@@ -505,7 +510,7 @@ To add support for a new video platform:
    }
    ```
 
-2. **Update URL detection** (downloader.rs):
+1. **Update URL detection** (downloader.rs):
 
    ```rust
    pub fn detect_platform(url: &str) -> Platform {
@@ -516,7 +521,7 @@ To add support for a new video platform:
    }
    ```
 
-3. **Update search detection** (search.rs):
+1. **Update search detection** (search.rs):
 
    ```rust
    fn platform_from_hint(extractor: &str) -> Platform {
@@ -527,7 +532,7 @@ To add support for a new video platform:
    }
    ```
 
-4. **Test**: yt-dlp automatically handles the new platform
+1. **Test**: yt-dlp automatically handles the new platform
 
 ### Extending with New Search Features
 
@@ -569,7 +574,7 @@ tasks.push(new_platform_results);
 
 ### URL Validation
 
-- Whitelist protocol check (http:// or https://)
+- Whitelist protocol check (`http://` or `https://`)
 - Domain validation before execution
 - User-selected output directory
 
@@ -610,7 +615,7 @@ tasks.push(new_platform_results);
 
 ## Documentation Structure
 
-```
+```text
 docs/
 ├── CODEBASE_INDEX.md     ← Module catalog and structure
 ├── ARCHITECTURE.md        ← This file - System design
