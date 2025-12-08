@@ -47,6 +47,40 @@ if %ERRORLEVEL% EQU 0 (
     echo Warning: Failed to download yt-dlp
 )
 
+REM Download ffmpeg
+echo.
+echo Downloading ffmpeg...
+curl -L https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip -o dist\ffmpeg-latest.zip
+if %ERRORLEVEL% EQU 0 (
+    echo ffmpeg downloaded successfully
+    REM Extract ffmpeg
+    echo Extracting ffmpeg...
+    if exist "%ProgramFiles%\7-Zip\7z.exe" (
+        "%ProgramFiles%\7-Zip\7z.exe" x dist\ffmpeg-latest.zip -odist\ >nul
+        REM Copy ffmpeg executables
+        for /d %%D in (dist\ffmpeg-master-latest-win64-gpl*) do (
+            if exist "%%D\bin\ffmpeg.exe" (
+                copy "%%D\bin\ffmpeg.exe" dist\windows-portable\ >nul
+                echo ffmpeg.exe copied
+            )
+            if exist "%%D\bin\ffprobe.exe" (
+                copy "%%D\bin\ffprobe.exe" dist\windows-portable\ >nul
+                echo ffprobe.exe copied
+            )
+        )
+        REM Cleanup
+        rmdir /S /Q dist\ffmpeg-master-latest-win64-gpl* >nul 2>&1
+        del dist\ffmpeg-latest.zip >nul 2>&1
+    ) else (
+        echo Warning: 7-Zip not found. Cannot extract ffmpeg automatically.
+        echo Manual extraction required from: dist\ffmpeg-latest.zip
+        echo Copy ffmpeg.exe and ffprobe.exe to: dist\windows-portable\
+    )
+) else (
+    echo Warning: Failed to download ffmpeg
+    echo ffmpeg is recommended for best video format support
+)
+
 REM Find MSYS2 GTK4 path (common locations)
 set "GTK_PATH="
 if exist "C:\msys64\ucrt64" set "GTK_PATH=C:\msys64\ucrt64"
@@ -156,6 +190,7 @@ echo set "PATH=%%DIR%%;%%PATH%%" >> dist\windows-portable\VDownloader.bat
 echo set "GDK_PIXBUF_MODULE_FILE=%%DIR%%\lib\gdk-pixbuf-2.0\2.10.0\loaders.cache" >> dist\windows-portable\VDownloader.bat
 echo set "GTK_DATA_PREFIX=%%DIR%%" >> dist\windows-portable\VDownloader.bat
 echo set "XDG_DATA_DIRS=%%DIR%%\share;%%XDG_DATA_DIRS%%" >> dist\windows-portable\VDownloader.bat
+echo set "FFMPEG_PATH=%%DIR%%\ffmpeg.exe" >> dist\windows-portable\VDownloader.bat
 echo start "" "%%DIR%%\vdownloader.exe" %%* >> dist\windows-portable\VDownloader.bat
 
 REM Create README
@@ -175,11 +210,12 @@ echo Included:
 echo   * VDownloader application
 echo   * GTK4 runtime libraries
 echo   * yt-dlp ^(video downloader^)
+echo   * ffmpeg and ffprobe ^(for best video format support^)
 echo   * Icon themes and schemas
 echo.
 echo No installation required - just extract and run!
 echo.
-echo Total size: ~100-150 MB
+echo Total size: ~150-200 MB ^(includes ffmpeg^)
 echo.
 ) > dist\windows-portable\README.txt
 
